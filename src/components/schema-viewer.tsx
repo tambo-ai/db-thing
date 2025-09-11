@@ -123,7 +123,7 @@ function ShareModal({
           </button>
         </div>
 
-        <p className='text-gray-600 mb-6 text-base leading-relaxed'>
+        <p className='text-gray-600 mb-6 leading-relaxed'>
           Your schema has been saved! Share this URL to let others view your
           database design.
         </p>
@@ -134,14 +134,14 @@ function ShareModal({
           </div>
           <button
             onClick={copyToClipboard}
-            className='px-6 py-4 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl group'
+            className='p-3 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl group'
           >
             {copied ? (
               <Check className='w-4 h-4 transition-transform group-hover:scale-110' />
             ) : (
               <Copy className='w-4 h-4 transition-transform group-hover:scale-110' />
             )}
-            <span className='font-medium'>{copied ? 'Copied!' : 'Copy'}</span>
+            <span className='text-sm'>{copied ? 'Copied!' : 'Copy'}</span>
           </button>
         </div>
       </div>
