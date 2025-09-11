@@ -1,0 +1,14 @@
+{
+  "name": "server",
+  "scripts": {
+    "start": "vercel dev",
+    "deploy": "vercel"
+  },
+  "dependencies": {
+    "@google/genai": "^1.19.0",
+    "hono": "^4.7.11"
+  },
+  "devDependencies": {
+    "vercel": "^32.4.1"
+  }
+}
