@@ -49,10 +49,8 @@ function ChatContent() {
             {isChatOpen && (
               <>
                 <div className='p-4 border-b border-gray-200'>
-                  <h2 className='text-lg font-semibold text-gray-900'>
-                    Database Design Assistant
-                  </h2>
-                  <p className='text-sm text-gray-600 mt-1'>
+                  <h2 className='text-gray-900'>Database Design Assistant</h2>
+                  <p className='text-xs text-gray-600 mt-1'>
                     Create, analyze, and optimize database schemas with AI
                   </p>
                 </div>

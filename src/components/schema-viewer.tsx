@@ -213,7 +213,7 @@ export function SchemaViewer({
   return (
     <div className='flex-1 flex flex-col'>
       {/* Fixed Tabs */}
-      <div className='p-6 bg-gray-50 border-b border-gray-200 flex-shrink-0'>
+      <div className='p-2.5 bg-gray-50 border-b border-gray-200 flex-shrink-0'>
         <div className='flex items-center justify-between'>
           <div className='relative bg-gray-200 rounded-2xl p-1.5 inline-flex'>
             <button
