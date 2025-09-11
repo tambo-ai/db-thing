@@ -100,9 +100,9 @@ function ShareModal({
 
   return (
     <div className='fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50'>
-      <div className='bg-white/95 backdrop-blur-md rounded-3xl p-8 w-full max-w-lg mx-4 shadow-2xl border border-white/20'>
+      <div className='bg-white/95 backdrop-blur-md rounded-3xl p-8 w-full max-w-xl mx-4 shadow-2xl border border-white/20'>
         <div className='flex items-center justify-between mb-6'>
-          <h2 className='text-2xl font-semibold text-gray-900'>Share Schema</h2>
+          <h2 className='text-2xl font-medium text-gray-900'>Share Schema</h2>
           <button
             onClick={onClose}
             className='text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-xl hover:bg-gray-100'
