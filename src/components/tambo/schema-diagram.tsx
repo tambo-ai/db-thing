@@ -23,19 +23,15 @@ interface SchemaDiagramProps {
   title?: string;
 }
 
-// Custom node for database tables
 const TableNode = ({ data }: NodeProps) => {
   return (
-    <div className='border border-gray-200 bg-white rounded p-0 min-w-[180px] overflow-hidden'>
-      {/* Header */}
+    <div className='border border-gray-200 bg-white rounded-xl p-0 min-w-[180px] overflow-hidden'>
       <div className='border-b border-gray-200 py-2 px-3 bg-gray-50'>
         <div className='font-medium text-sm text-gray-800'>{data.label}</div>
       </div>
 
-      {/* Columns */}
       <div className='p-0'>
         {data.columns.map((column: TableColumn, index: number) => {
-          // Create unique handle IDs that match the table:column pattern
           const sourceHandleId = `${data.label}-${column.name}-source`;
           const targetHandleId = `${data.label}-${column.name}-target`;
 
@@ -76,7 +72,6 @@ const TableNode = ({ data }: NodeProps) => {
                 {column.type}
               </span>
 
-              {/* Primary key gets a target handle (for incoming foreign keys) */}
               {column.isPrimaryKey && (
                 <Handle
                   id={targetHandleId}
@@ -94,7 +89,6 @@ const TableNode = ({ data }: NodeProps) => {
                 />
               )}
 
-              {/* Foreign keys get source handles (for outgoing relationships) */}
               {column.foreignKey && (
                 <Handle
                   id={sourceHandleId}
@@ -121,7 +115,6 @@ const TableNode = ({ data }: NodeProps) => {
   );
 };
 
-// Node types definition for ReactFlow
 const nodeTypes = {
   tableNode: TableNode,
 };
@@ -131,12 +124,10 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Prevent hydration mismatch by only rendering on client
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Generate edges based on foreign key relationships
   useEffect(() => {
     console.log('SchemaDiagram useEffect triggered with tables:', tables);
 
@@ -146,20 +137,16 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
       return;
     }
 
-    // Calculate table positions using grid layout
     const calculatePositions = () => {
-      // Constants for layout
       const nodeWidth = 200;
       const padding = 120;
       const containerWidth = 1400;
       const containerHeight = 1000;
 
-      // Grid layout - arrange tables in a grid pattern
       const cols = Math.ceil(Math.sqrt(tables.length));
       const cellWidth = containerWidth / cols;
       const cellHeight = containerHeight / Math.ceil(tables.length / cols);
 
-      // Create nodes with calculated positions
       return tables.map((table, index) => {
         const row = Math.floor(index / cols);
         const col = index % cols;
@@ -181,7 +168,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
       });
     };
 
-    // Generate relationship edges
     const generateRelationEdges = () => {
       const relationEdges: Edge[] = [];
 
@@ -191,7 +177,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
             const sourceTableId = table.name;
             const targetTableId = column.foreignKey.table;
 
-            // Only create edge if target table exists
             if (tables.some((t) => t.name === targetTableId)) {
               const edgeId = `${sourceTableId}-${column.name}-${targetTableId}`;
 
@@ -247,7 +232,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
     setEdges(relationEdges);
   }, [tables, setNodes, setEdges]);
 
-  // Don't render on server to prevent hydration mismatch
   if (!isMounted) {
     return (
       <div className='h-full w-full border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center'>
@@ -328,7 +312,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
         />
         <Controls showInteractive={false} position='bottom-right' />
 
-        {/* Floating Stats */}
         <div className='absolute top-4 left-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 z-10'>
           <div className='text-sm text-gray-600'>
             Tables: {tables.length} | Relationships: {edges.length}
@@ -339,7 +322,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
   );
 }
 
-// Main component with ReactFlowProvider
 export function SchemaDiagram(props: SchemaDiagramProps) {
   console.log('SchemaDiagram props:', props);
   console.log('SchemaDiagram tables length:', props.tables?.length || 0);
@@ -352,7 +334,6 @@ export function SchemaDiagram(props: SchemaDiagramProps) {
   );
 }
 
-// Zod schema for the component props
 export const schemaDiagramSchema = z.object({
   tables: z
     .array(

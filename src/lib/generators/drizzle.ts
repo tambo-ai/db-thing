@@ -3,9 +3,10 @@ import { Table, TableColumn } from '../types';
 const drizzleTypeMap: Record<string, (col: TableColumn) => string> = {
   SERIAL: () => 'serial',
   INTEGER: () => 'integer',
-  VARCHAR: (col) => `varchar('${col.name}', { length: 255 })`, // Assuming 255, can be improved
+  VARCHAR: (col) => `varchar('${col.name}', { length: 255 })`,
   TEXT: () => 'text',
   TIMESTAMP: () => 'timestamp',
+  UUID: () => 'uuid',
 };
 
 const toCamelCase = (str: string) => {
@@ -30,6 +31,7 @@ export const generateDrizzleSchema = (tables: Table[]): string => {
           if (drizzleType.includes('timestamp')) imports.add('timestamp');
           if (drizzleType.includes('text')) imports.add('text');
           if (drizzleType.includes('integer')) imports.add('integer');
+          if (drizzleType.includes('uuid')) imports.add('uuid');
 
           let columnChain = `  ${toCamelCase(col.name)}: ${drizzleType}('${
             col.name

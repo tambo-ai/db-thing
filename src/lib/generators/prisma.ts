@@ -6,6 +6,7 @@ const prismaTypeMap: Record<string, string> = {
   VARCHAR: 'String',
   TEXT: 'String',
   TIMESTAMP: 'DateTime',
+  UUID: 'String',
 };
 
 const toPascalCase = (str: string) => {

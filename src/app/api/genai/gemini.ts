@@ -23,7 +23,7 @@ ${currentSchema}
 }
 
 Please provide:
-1. Table definitions with appropriate data types
+1. Table definitions with appropriate data types (including UUID, VARCHAR, INTEGER, BOOLEAN, TIMESTAMP, TEXT, etc.)
 2. Primary and foreign key relationships
 3. Any constraints or validations needed
 
@@ -34,7 +34,7 @@ Return as JSON with the following structure:
   - columns: array of column objects
 - Each column should have:
   - name: string (column name)
-  - type: string (data type like 'VARCHAR(255)', 'INTEGER', 'BOOLEAN', etc.)
+  - type: string (data type like 'UUID', 'VARCHAR(255)', 'INTEGER', 'BOOLEAN', 'TIMESTAMP', 'TEXT', etc.)
   - nullable: boolean (can be null)
   - defaultValue: string (optional default value)
   - isPrimaryKey: boolean (is primary key)

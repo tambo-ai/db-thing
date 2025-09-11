@@ -9,8 +9,8 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Share2, Copy, Check } from 'lucide-react';
+import Link from 'next/link';
 
-// Animated loading text component
 function AnimatedLoadingText({
   variant = 'dark',
 }: {
@@ -37,7 +37,6 @@ function AnimatedLoadingText({
   );
 }
 
-// Empty state component
 function EmptySchemaState() {
   return (
     <div className='flex items-center justify-center h-full'>
@@ -76,7 +75,6 @@ function EmptySchemaState() {
   );
 }
 
-// Share Modal Component
 function ShareModal({
   isOpen,
   onClose,
@@ -151,7 +149,6 @@ function ShareModal({
   );
 }
 
-// Utility function to generate random alphanumeric code
 function generateShareCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '';
@@ -164,40 +161,53 @@ function generateShareCode(): string {
 interface SchemaViewerProps {
   schemaData: Table[];
   isLoading: boolean;
+  viewType?: 'normal' | 'shared';
 }
 
-export function SchemaViewer({ schemaData, isLoading }: SchemaViewerProps) {
+export function SchemaViewer({
+  schemaData,
+  isLoading,
+  viewType = 'normal',
+}: SchemaViewerProps) {
+  const safeSchemaData = schemaData ?? [];
   const [activeTab, setActiveTab] = useState<'diagram' | 'code'>('diagram');
   const [activeCodeTab, setActiveCodeTab] = useState<
     'sql' | 'prisma' | 'drizzle'
   >('sql');
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [shareLoading, setShareLoading] = useState(false);
 
-  // Debug schema data
   console.log('SchemaViewer received:', {
     schemaDataLength: schemaData?.length || 0,
     isLoading,
     schemaData,
   });
 
-  const handleShare = () => {
-    if (schemaData.length === 0) return;
-
+  const handleShare = async () => {
+    if (safeSchemaData.length === 0) return;
+    if (viewType === 'shared') {
+      setShareUrl(window.location.href);
+      setShowShareModal(true);
+      return;
+    }
+    setShareLoading(true);
     const code = generateShareCode();
-    const schemaEntry = {
-      code,
-      data: schemaData,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Save to localStorage
-    localStorage.setItem(`schema_${code}`, JSON.stringify(schemaEntry));
-
-    // Create share URL
-    const url = `${window.location.origin}/schema/${code}`;
-    setShareUrl(url);
-    setShowShareModal(true);
+    try {
+      const res = await fetch('/api/schema', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, data: safeSchemaData }),
+      });
+      if (!res.ok) throw new Error('Failed to save schema');
+      const url = `${window.location.origin}/schema/${code}`;
+      setShareUrl(url);
+      setShowShareModal(true);
+    } catch {
+      alert('Failed to save schema. Please try again.');
+    } finally {
+      setShareLoading(false);
+    }
   };
 
   return (
@@ -250,15 +260,25 @@ export function SchemaViewer({ schemaData, isLoading }: SchemaViewerProps) {
             </button>
           </div>
 
-          {/* Share Button */}
-          {schemaData.length > 0 && !isLoading && (
-            <button
-              onClick={handleShare}
-              className='relative px-6 py-3 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md flex items-center gap-2 group'
-            >
-              <Share2 className='w-4 h-4 transition-transform group-hover:scale-110' />
-              <span>Share</span>
-            </button>
+          {/* Action Buttons */}
+          {safeSchemaData.length > 0 && !isLoading && (
+            <div className='flex items-center gap-3'>
+              {viewType === 'shared' && (
+                <Link
+                  href='/chat'
+                  className='px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md flex items-center gap-2 group'
+                >
+                  <span>Create Your Own</span>
+                </Link>
+              )}
+              <button
+                onClick={handleShare}
+                className='relative px-6 py-3 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md flex items-center gap-2 group'
+              >
+                <Share2 className='w-4 h-4 transition-transform group-hover:scale-110' />
+                <span>Share</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -279,10 +299,10 @@ export function SchemaViewer({ schemaData, isLoading }: SchemaViewerProps) {
                 <div className='flex items-center justify-center h-full'>
                   <AnimatedLoadingText />
                 </div>
-              ) : schemaData.length === 0 ? (
+              ) : safeSchemaData.length === 0 ? (
                 <EmptySchemaState />
               ) : (
-                <SchemaDiagram tables={schemaData} />
+                <SchemaDiagram tables={safeSchemaData} />
               )}
             </motion.div>
           ) : (
@@ -390,7 +410,7 @@ export function SchemaViewer({ schemaData, isLoading }: SchemaViewerProps) {
                   <div className='bg-gray-900 rounded-2xl p-6 h-full flex items-center justify-center'>
                     <AnimatedLoadingText variant='light' />
                   </div>
-                ) : schemaData.length === 0 ? (
+                ) : safeSchemaData.length === 0 ? (
                   <div className='bg-gray-900 rounded-2xl p-6 h-full flex items-center justify-center'>
                     <div className='text-center'>
                       <p className='text-gray-400 text-lg mb-2'>
@@ -405,11 +425,12 @@ export function SchemaViewer({ schemaData, isLoading }: SchemaViewerProps) {
                   <div className='bg-gray-900 rounded-2xl p-6 h-full overflow-auto'>
                     <pre className='text-green-400 text-sm font-mono'>
                       <code>
-                        {activeCodeTab === 'sql' && generateSqlCode(schemaData)}
+                        {activeCodeTab === 'sql' &&
+                          generateSqlCode(safeSchemaData)}
                         {activeCodeTab === 'prisma' &&
-                          generatePrismaSchema(schemaData)}
+                          generatePrismaSchema(safeSchemaData)}
                         {activeCodeTab === 'drizzle' &&
-                          generateDrizzleSchema(schemaData)}
+                          generateDrizzleSchema(safeSchemaData)}
                       </code>
                     </pre>
                   </div>
@@ -419,6 +440,18 @@ export function SchemaViewer({ schemaData, isLoading }: SchemaViewerProps) {
           )}
         </div>
       </div>
+
+      {/* Share Loading Modal */}
+      {shareLoading && (
+        <div className='fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50'>
+          <div className='bg-white/95 backdrop-blur-md rounded-3xl p-8 w-full max-w-xs mx-4 shadow-2xl border border-white/20 flex flex-col items-center'>
+            <div className='w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mb-4'></div>
+            <p className='text-gray-900 text-lg font-medium'>
+              Saving schema...
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Share Modal */}
       <ShareModal

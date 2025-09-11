@@ -7,12 +7,6 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 
-interface SharedSchema {
-  code: string;
-  data: Table[];
-  createdAt: string;
-}
-
 function NotFoundState({ code }: { code: string }) {
   return (
     <div className='flex items-center justify-center min-h-screen bg-gray-50'>
@@ -56,80 +50,50 @@ export default function SharedSchemaPage() {
   const params = useParams();
   const code = params.code as string;
 
+  // Determine view type
+  const viewType = 'shared'; // Always shared for this page
+
   const [schema, setSchema] = useState<Table[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (!code) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const storedSchema = localStorage.getItem(`schema_${code}`);
-      if (storedSchema) {
-        const parsedSchema: SharedSchema = JSON.parse(storedSchema);
-        setSchema(parsedSchema.data);
-      } else {
+    const fetchSchema = async () => {
+      try {
+        const res = await fetch(`/api/schema?code=${code}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSchema(data.data);
+        } else if (res.status === 404) {
+          setNotFound(true);
+        } else {
+          setNotFound(true);
+        }
+      } catch {
         setNotFound(true);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading schema:', error);
-      setNotFound(true);
-    } finally {
-      setLoading(false);
-    }
+    };
+    fetchSchema();
   }, [code]);
 
   if (loading) {
     return <LoadingState />;
   }
 
-  if (notFound || !schema) {
+  if (notFound) {
     return <NotFoundState code={code} />;
   }
 
   return (
     <div className='min-h-screen bg-gray-50'>
-      {/* Header */}
-      <div className='bg-white border-b border-gray-200'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='flex items-center justify-between h-16'>
-            <div className='flex items-center gap-4'>
-              <Link
-                href='/chat'
-                className='text-gray-600 hover:text-gray-900 transition-all duration-200 p-2 rounded-xl hover:bg-gray-100 group'
-              >
-                <ArrowLeft className='w-5 h-5 transition-transform group-hover:-translate-x-0.5' />
-              </Link>
-              <div>
-                <h1 className='text-lg font-semibold text-gray-900'>
-                  Shared Database Schema
-                </h1>
-                <p className='text-sm text-gray-600'>
-                  Code:{' '}
-                  <code className='bg-gray-100 px-2 py-1 rounded text-xs'>
-                    {code}
-                  </code>
-                </p>
-              </div>
-            </div>
-
-            <Link
-              href='/chat'
-              className='px-6 py-3 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md'
-            >
-              Create Your Own
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Schema Viewer */}
       <div className='h-[calc(100vh-65px)]'>
-        <SchemaViewer schemaData={schema} isLoading={false} />
+        <SchemaViewer
+          schemaData={schema ?? []}
+          isLoading={loading}
+          viewType={viewType}
+        />
       </div>
     </div>
   );
