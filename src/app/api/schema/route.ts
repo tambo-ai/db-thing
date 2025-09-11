@@ -1,11 +1,5 @@
-import { createClient } from '@libsql/client';
-
+import { turso } from '@/lib/turso';
 import { NextRequest, NextResponse } from 'next/server';
-
-export const turso = createClient({
-  url: process.env.TURSO_DATABASE_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
 
 // POST /api/schema { code, data }
 export async function POST(req: NextRequest) {
