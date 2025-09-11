@@ -177,6 +177,7 @@ export function SchemaViewer({
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [shareLoading, setShareLoading] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   console.log('SchemaViewer received:', {
     schemaDataLength: schemaData?.length || 0,
@@ -207,6 +208,25 @@ export function SchemaViewer({
       alert('Failed to save schema. Please try again.');
     } finally {
       setShareLoading(false);
+    }
+  };
+
+  const handleCopyCode = async () => {
+    let codeToCopy = '';
+    if (activeCodeTab === 'sql') {
+      codeToCopy = generateSqlCode(safeSchemaData);
+    } else if (activeCodeTab === 'prisma') {
+      codeToCopy = generatePrismaSchema(safeSchemaData);
+    } else if (activeCodeTab === 'drizzle') {
+      codeToCopy = generateDrizzleSchema(safeSchemaData);
+    }
+
+    try {
+      await navigator.clipboard.writeText(codeToCopy);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code: ', err);
     }
   };
 
@@ -422,7 +442,18 @@ export function SchemaViewer({
                     </div>
                   </div>
                 ) : (
-                  <div className='bg-gray-900 rounded-2xl p-6 h-full overflow-auto'>
+                  <div className='bg-gray-900 rounded-2xl p-6 h-full overflow-auto relative'>
+                    <button
+                      onClick={handleCopyCode}
+                      className='absolute top-4 right-4 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow-md group'
+                    >
+                      {codeCopied ? (
+                        <Check className='w-4 h-4 transition-transform group-hover:scale-110' />
+                      ) : (
+                        <Copy className='w-4 h-4 transition-transform group-hover:scale-110' />
+                      )}
+                      <span>{codeCopied ? 'Copied!' : 'Copy'}</span>
+                    </button>
                     <pre className='text-green-400 text-sm font-mono'>
                       <code>
                         {activeCodeTab === 'sql' &&
