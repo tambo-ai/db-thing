@@ -1,18 +1,18 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import ReactFlow, {
+  Edge,
+  NodeProps,
+  Handle,
+  Position,
+  useNodesState,
+  useEdgesState,
+  Controls,
   Background,
   BackgroundVariant,
-  Controls,
-  Edge,
-  Handle,
   MarkerType,
-  NodeProps,
-  Position,
   ReactFlowProvider,
-  useEdgesState,
-  useNodesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Table, TableColumn } from '@/lib/types';
@@ -85,7 +85,7 @@ const TableNode = ({ data }: NodeProps) => {
                   className='!bg-blue-500 !rounded-full !border-2 !border-white !w-3 !h-3'
                   style={{
                     top: '50%',
-                    left: -6,
+                    left: -5,
                     opacity: 1,
                     zIndex: 10,
                   }}
@@ -103,7 +103,7 @@ const TableNode = ({ data }: NodeProps) => {
                   className='!bg-blue-500 !rounded-full !border-2 !border-white !w-3 !h-3'
                   style={{
                     top: '50%',
-                    right: -6,
+                    right: -5,
                     opacity: 1,
                     zIndex: 10,
                   }}
@@ -129,130 +129,134 @@ const nodeTypes = {
 function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Calculate table positions using grid layout
-  const calculateNodePositions = useCallback(() => {
-    if (!tables || tables.length === 0) return [];
-
-    // Constants for layout
-    const nodeWidth = 200;
-    const padding = 120;
-    const containerWidth = 1400;
-    const containerHeight = 1000;
-
-    // Grid layout - arrange tables in a grid pattern
-    const cols = Math.ceil(Math.sqrt(tables.length));
-    const cellWidth = containerWidth / cols;
-    const cellHeight = containerHeight / Math.ceil(tables.length / cols);
-
-    // Create nodes with calculated positions
-    const nodes = tables.map((table, index) => {
-      const row = Math.floor(index / cols);
-      const col = index % cols;
-
-      const position = {
-        x: col * cellWidth + (cellWidth - nodeWidth) / 2,
-        y: row * cellHeight + padding,
-      };
-
-      return {
-        id: table.name,
-        type: 'tableNode',
-        position,
-        data: {
-          label: table.name,
-          columns: table.columns,
-        },
-      };
-    });
-
-    return nodes;
-  }, [tables]);
+  // Prevent hydration mismatch by only rendering on client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Generate edges based on foreign key relationships
-  const generateEdges = useCallback(() => {
-    if (!tables || tables.length === 0) return [];
+  useEffect(() => {
+    console.log('SchemaDiagram useEffect triggered with tables:', tables);
 
-    const relationEdges: Edge[] = [];
+    if (!tables || tables.length === 0) {
+      setNodes([]);
+      setEdges([]);
+      return;
+    }
 
-    // Create a map for quick table lookup
-    const tableMap = new Map();
-    tables.forEach((table) => {
-      tableMap.set(table.name, table);
-    });
+    // Calculate table positions using grid layout
+    const calculatePositions = () => {
+      // Constants for layout
+      const nodeWidth = 200;
+      const padding = 120;
+      const containerWidth = 1400;
+      const containerHeight = 1000;
 
-    // Create edges for each foreign key relationship
-    tables.forEach((sourceTable) => {
-      sourceTable.columns.forEach((sourceColumn) => {
-        if (sourceColumn.foreignKey) {
-          const targetTableName = sourceColumn.foreignKey.table;
-          const targetColumnName = sourceColumn.foreignKey.column;
+      // Grid layout - arrange tables in a grid pattern
+      const cols = Math.ceil(Math.sqrt(tables.length));
+      const cellWidth = containerWidth / cols;
+      const cellHeight = containerHeight / Math.ceil(tables.length / cols);
 
-          if (tableMap.has(targetTableName)) {
-            const targetTable = tableMap.get(targetTableName);
-            const targetColumn = targetTable.columns.find(
-              (c: TableColumn) => c.name === targetColumnName,
-            );
+      // Create nodes with calculated positions
+      return tables.map((table, index) => {
+        const row = Math.floor(index / cols);
+        const col = index % cols;
 
-            if (targetColumn) {
-              // Create a unique ID for this edge
-              const edgeId = `${sourceTable.name}:${sourceColumn.name}-to-${targetTableName}:${targetColumnName}`;
+        const position = {
+          x: col * cellWidth + (cellWidth - nodeWidth) / 2,
+          y: row * cellHeight + padding,
+        };
 
-              // Use the correct handle IDs that match the pattern in TableNode component
-              const sourceHandleId = `${sourceTable.name}-${sourceColumn.name}-source`;
-              const targetHandleId = `${targetTableName}-${targetColumnName}-target`;
+        return {
+          id: table.name,
+          type: 'tableNode',
+          position,
+          data: {
+            label: table.name,
+            columns: table.columns,
+          },
+        };
+      });
+    };
+
+    // Generate relationship edges
+    const generateRelationEdges = () => {
+      const relationEdges: Edge[] = [];
+
+      tables.forEach((table) => {
+        table.columns.forEach((column) => {
+          if (column.foreignKey) {
+            const sourceTableId = table.name;
+            const targetTableId = column.foreignKey.table;
+
+            // Only create edge if target table exists
+            if (tables.some((t) => t.name === targetTableId)) {
+              const edgeId = `${sourceTableId}-${column.name}-${targetTableId}`;
 
               relationEdges.push({
                 id: edgeId,
-                source: sourceTable.name,
-                target: targetTableName,
-                sourceHandle: sourceHandleId,
-                targetHandle: targetHandleId,
+                source: sourceTableId,
+                target: targetTableId,
+                sourceHandle: `${sourceTableId}-${column.name}-source`,
+                targetHandle: `${targetTableId}-${column.foreignKey.column}-target`,
                 type: 'default',
-                animated: false,
+                animated: true,
                 style: {
                   stroke: '#3b82f6',
-                  strokeWidth: 2,
+                  strokeWidth: 1,
+                  strokeDasharray: '4 3',
                 },
                 markerEnd: {
                   type: MarkerType.ArrowClosed,
                   color: '#3b82f6',
-                  width: 12,
-                  height: 12,
+                  width: 8,
+                  height: 8,
                 },
-                label: `${sourceColumn.name} → ${targetColumnName}`,
+                label: `${column.name} → ${column.foreignKey.column}`,
                 labelStyle: {
-                  fill: '#1f2937',
+                  fill: '#3b82f6',
                   fontSize: 10,
-                  fontFamily: 'system-ui',
-                  fontWeight: 500,
+                  fontFamily: 'monospace',
+                  fontWeight: 600,
                 },
                 labelBgPadding: [4, 2],
                 labelBgBorderRadius: 4,
                 labelBgStyle: {
-                  fill: '#f3f4f6',
-                  fillOpacity: 0.9,
-                  stroke: '#d1d5db',
-                  strokeWidth: 1,
+                  fill: '#f0f7ff',
+                  fillOpacity: 0.8,
                 },
                 labelShowBg: true,
               });
             }
           }
-        }
+        });
       });
-    });
 
-    return relationEdges;
-  }, [tables]);
+      return relationEdges;
+    };
 
-  useEffect(() => {
-    const tableNodes = calculateNodePositions();
-    const relationEdges = generateEdges();
+    const tableNodes = calculatePositions();
+    const relationEdges = generateRelationEdges();
+
+    console.log('Generated nodes:', tableNodes);
+    console.log('Generated edges:', relationEdges);
 
     setNodes(tableNodes);
     setEdges(relationEdges);
-  }, [calculateNodePositions, generateEdges]); // setNodes and setEdges are stable
+  }, [tables, setNodes, setEdges]);
+
+  // Don't render on server to prevent hydration mismatch
+  if (!isMounted) {
+    return (
+      <div className='h-full w-full border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center'>
+        <div className='text-center text-gray-500'>
+          <div className='text-lg font-medium mb-2'>Loading Diagram...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!tables || tables.length === 0) {
     return (
@@ -266,6 +270,13 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
       </div>
     );
   }
+
+  console.log('SchemaDiagram rendering with:', {
+    tablesLength: tables.length,
+    nodesLength: nodes.length,
+    edgesLength: edges.length,
+    isMounted,
+  });
 
   return (
     <div className='h-full w-full border border-gray-200 rounded-lg bg-white overflow-hidden relative'>
@@ -281,18 +292,20 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
           type: 'default',
           style: {
             stroke: '#3b82f6',
-            strokeWidth: 2,
+            strokeWidth: 1,
+            strokeDasharray: '4 3',
           },
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#3b82f6',
-            width: 12,
-            height: 12,
+            width: 8,
+            height: 8,
           },
         }}
         connectionLineStyle={{
           stroke: '#3b82f6',
-          strokeWidth: 2,
+          strokeWidth: 1,
+          strokeDasharray: '4 3',
         }}
         attributionPosition='bottom-right'
         minZoom={0.1}
@@ -328,6 +341,10 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
 
 // Main component with ReactFlowProvider
 export function SchemaDiagram(props: SchemaDiagramProps) {
+  console.log('SchemaDiagram props:', props);
+  console.log('SchemaDiagram tables length:', props.tables?.length || 0);
+  console.log('SchemaDiagram tables data:', props.tables);
+
   return (
     <ReactFlowProvider>
       <SchemaDiagramInner {...props} />

@@ -1,7 +1,6 @@
 import { Table } from '../lib/types';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = '/api';
 
 export async function getDatabaseSchema(
   description?: string,
@@ -20,9 +19,7 @@ export async function getDatabaseSchema(
       },
       body: JSON.stringify({
         description,
-        currentSchema: currentSchema
-          ? JSON.stringify(currentSchema)
-          : undefined,
+        currentSchema: currentSchema,
       }),
     });
 

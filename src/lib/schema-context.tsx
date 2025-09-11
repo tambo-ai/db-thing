@@ -35,12 +35,14 @@ export function SchemaProvider({
 
   const updateSchema = useCallback(
     async (description: string, currentSchema?: Table[]) => {
+      console.log('updateSchema called with description:', description);
       setIsLoading(true);
       try {
         const newSchema = await getDatabaseSchema(
           description,
           JSON.stringify(currentSchema || schemaData),
         );
+        console.log('updateSchema received new schema:', newSchema);
         setSchemaData(newSchema);
       } catch (error) {
         console.error('Failed to update schema:', error);
@@ -51,11 +53,16 @@ export function SchemaProvider({
     [schemaData],
   );
 
+  const setSchemaDataWithLogging = useCallback((tables: Table[]) => {
+    console.log('setSchemaData called with tables:', tables);
+    setSchemaData(tables);
+  }, []);
+
   const value = {
     schemaData,
     isLoading,
     updateSchema,
-    setSchemaData,
+    setSchemaData: setSchemaDataWithLogging,
   };
 
   return (

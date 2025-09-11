@@ -11,10 +11,6 @@
 import { Graph, graphSchema } from '@/components/tambo/graph';
 import { DataCard, dataCardSchema } from '@/components/ui/card-data';
 import {
-  SchemaDiagram,
-  schemaDiagramSchema,
-} from '@/components/tambo/schema-diagram';
-import {
   getDatabaseSchemaForTool,
   analyzeSchemaForTool,
   generateMigrationForTool,
@@ -332,13 +328,6 @@ export const components: TamboComponent[] = [
       'A component that displays database objects (tables, columns, relationships) as clickable cards with detailed information and selection capabilities.',
     component: DataCard,
     propsSchema: dataCardSchema,
-  },
-  {
-    name: 'SchemaDiagram',
-    description:
-      'An interactive Entity Relationship Diagram (ERD) component that visualizes database tables, columns, and relationships using ReactFlow. Shows primary keys, foreign keys, data types, and nullable constraints with visual connections between related tables.',
-    component: SchemaDiagram,
-    propsSchema: schemaDiagramSchema,
   },
   // TODO: Add more database-specific components:
   // - TableSchema component for detailed table visualization

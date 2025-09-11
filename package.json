@@ -11,6 +11,8 @@
     "init": "npx tambo init"
   },
   "dependencies": {
+    "@google/genai": "^1.19.0",
+    "@libsql/client": "^0.15.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@tailwindcss/oxide": "^4.1.12",
     "@tambo-ai/react": "^0.47.0",
