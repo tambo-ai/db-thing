@@ -1,1 +1,0 @@
-This file is a placeholder to allow the server directory to be deleted safely. Remove this file to complete the deletion.
