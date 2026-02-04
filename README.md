@@ -104,6 +104,10 @@ npm run lint      # Run ESLint
 npm run lint:fix  # Fix linting issues
 ```
 
+## Credits
+
+Created by [Akinkunmi](https://akinkunmi.dev/) ([@akinkunmi](https://x.com/akinkunmi) · [GitHub](https://github.com/akinloluwami))
+
 ## License
 
 MIT
