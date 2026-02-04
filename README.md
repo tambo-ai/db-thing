@@ -4,138 +4,110 @@ An AI-powered database design and visualization tool built with Next.js and Tamb
 
 ## Features
 
-- 🗃️ Interactive database schema design
-- 🎨 Visual ERD (Entity Relationship Diagram) generation
-- 🤖 AI-powered schema optimization suggestions
-- 📊 Database performance insights
-- 🔄 Schema migration planning
-- 📝 Automatic documentation generation
+- **Natural Language Schema Design** - Describe your database requirements in plain English and get a complete schema
+- **Interactive ERD Visualization** - Visual entity relationship diagrams with drag-and-drop support using ReactFlow
+- **Multi-Format Code Generation** - Export schemas as SQL, Prisma, or Drizzle ORM code
+- **Schema Sharing** - Generate shareable URLs to share your database designs with others
+- **AI-Powered Analysis** - Get optimization suggestions, validation, and migration planning
+- **MCP Support** - Model Context Protocol integration for extended AI capabilities
+- **Resizable Chat Interface** - Adjustable sidebar width for comfortable workflow
 
 ## Get Started
 
 1. Clone this repository
-2. `npm install`
-3. `npx tambo init`
-   - or rename `example.env.local` to `.env.local` and add your tambo API key you can get for free [here](https://tambo.co/dashboard).
-4. Run `npm run dev` and go to `localhost:3200` to start designing databases!
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   Then add your API keys:
+   - `NEXT_PUBLIC_TAMBO_API_KEY` - Get from [tambo.co/dashboard](https://tambo.co/dashboard)
+   - `GEMINI_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com/apikey)
+   - `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` - Get from [Turso](https://turso.tech/app) (for schema sharing)
 
-## How It Works
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+5. Open [localhost:3200](http://localhost:3200) and start designing!
 
-### Database Design Components
+## Tech Stack
 
-The tool provides specialized components for database design:
+- **Next.js 16** with App Router
+- **React 19** with TypeScript
+- **Tambo AI SDK** for AI-powered interactions
+- **ReactFlow** for interactive ERD diagrams
+- **Gemini AI** for schema generation
+- **Turso** (LibSQL) for schema persistence
+- **Tailwind CSS v4** for styling
+- **Framer Motion** for animations
 
-```tsx
-const components: TamboComponent[] = [
-  {
-    name: 'ERDiagram',
-    description:
-      'A component that renders database entity relationship diagrams with tables, relationships, and constraints visualization.',
-    component: ERDiagram,
-    propsSchema: z.object({
-      tables: z.array(
-        z.object({
-          name: z.string(),
-          columns: z.array(
-            z.object({
-              name: z.string(),
-              type: z.string(),
-              nullable: z.boolean().optional(),
-              primaryKey: z.boolean().optional(),
-              foreignKey: z.string().optional(),
-            }),
-          ),
-        }),
-      ),
-      relationships: z.array(
-        z.object({
-          from: z.string(),
-          to: z.string(),
-          type: z.enum(['one-to-one', 'one-to-many', 'many-to-many']),
-        }),
-      ),
-    }),
-  },
-  // Add more database design components here!
-];
-```
+## AI Tools
 
-### Database Design Tools
+The application provides several AI-powered tools for database design:
 
-```tsx
-export const tools: TamboTool[] = [
-  {
-    name: 'analyzeSchema',
-    description:
-      'Analyze database schema for performance bottlenecks, normalization issues, and optimization opportunities',
-    tool: analyzeSchema,
-    toolSchema: z.function().args(
-      z.object({
-        schema: z.object({
-          tables: z.array(z.any()),
-          relationships: z.array(z.any()),
-        }),
-      }),
-    ),
-  },
-  {
-    name: 'generateMigration',
-    description: 'Generate SQL migration scripts for schema changes',
-    tool: generateMigration,
-    toolSchema: z.function().args(
-      z.object({
-        oldSchema: z.any(),
-        newSchema: z.any(),
-        dbType: z.enum(['postgresql', 'mysql', 'sqlite']),
-      }),
-    ),
-  },
-];
-```
+| Tool | Description |
+|------|-------------|
+| `getDatabaseSchema` | Generate a complete schema from a natural language description |
+| `analyzeSchema` | Analyze existing schemas for issues and optimization opportunities |
+| `generateMigration` | Create migration scripts based on schema change requirements |
+| `validateSchema` | Check schemas for consistency and referential integrity |
+| `optimizeSchema` | Improve schemas for performance and maintainability |
 
-### Setting Up the Database Design Tool
+## Code Generation
 
-Make sure the TamboProvider is configured for database design in your app:
+Export your schema in multiple formats:
 
-```tsx
-...
-<TamboProvider
-  apiKey={process.env.NEXT_PUBLIC_TAMBO_API_KEY!}
-  components={components} // Database design components
-  tools={tools} // Schema analysis and generation tools
->
-  {children}
-</TamboProvider>
-```
-
-In this example we do this in the `Layout.tsx` file, but you can do it anywhere in your app that is a client component.
-
-### Displaying Database Designs
-
-The database components are shown alongside the AI response, but you can display schemas wherever you like by accessing the latest thread message's `renderedComponent` field:
-
-```tsx
-const { thread } = useTambo();
-const latestComponent =
-  thread?.messages[thread.messages.length - 1]?.renderedComponent;
-
-return (
-  <div>
-    {latestComponent && (
-      <div className='database-schema-container'>{latestComponent}</div>
-    )}
-  </div>
-);
-```
+- **SQL** - Standard DDL statements with CREATE TABLE, constraints, and foreign keys
+- **Prisma** - Complete Prisma schema file with models and relations
+- **Drizzle** - TypeScript Drizzle ORM schema with proper types and references
 
 ## Example Prompts
 
-Try these prompts to get started with database design:
+Try these prompts to get started:
 
-- "Design a database schema for an e-commerce platform"
-- "Create an ERD for a blog system with users, posts, and comments"
-- "Analyze this schema for performance issues: [paste your schema]"
-- "Generate a migration script to add user roles to my existing user table"
-- "Design a many-to-many relationship between products and categories"
+- "Create a blog database with users, posts, and comments"
+- "Design an e-commerce schema with products, orders, and customers"
+- "Add a ratings table that references users and products"
+- "Optimize my schema for better query performance"
+- "Add soft delete support to all tables"
 
-For more detailed documentation, visit [Tambo's official docs](https://docs.tambo.co).
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── chat/           # Main chat interface
+│   ├── schema/[code]/  # Shared schema viewer
+│   └── api/            # API routes for schema generation
+├── components/
+│   ├── tambo/          # Chat and message components
+│   ├── schema-viewer   # Schema visualization and code tabs
+│   └── ui/             # Reusable UI components
+├── lib/
+│   ├── tambo.ts        # Component and tool registration
+│   ├── generators/     # SQL, Prisma, Drizzle code generators
+│   ├── schema-tools.ts # AI tool implementations
+│   └── types.ts        # TypeScript type definitions
+└── services/           # Business logic services
+```
+
+## Development
+
+```bash
+npm run dev       # Start development server on port 3200
+npm run build     # Build for production
+npm run lint      # Run ESLint
+npm run lint:fix  # Fix linting issues
+```
+
+## License
+
+MIT
+
+---
+
+For more information about Tambo AI, visit [docs.tambo.co](https://docs.tambo.co).
