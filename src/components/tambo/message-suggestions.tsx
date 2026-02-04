@@ -1,13 +1,14 @@
 "use client";
 
-import { MessageGenerationStage } from "@/components/tambo/message-generation-stage";
-import {
-  Tooltip,
-  TooltipProvider,
-} from "@/components/tambo/suggestions-tooltip";
+import { MessageGenerationStage } from "./message-generation-stage";
+import { Tooltip, TooltipProvider } from "./suggestions-tooltip";
 import { cn } from "@/lib/utils";
 import type { Suggestion, TamboThread } from "@tambo-ai/react";
-import { useTambo, useTamboSuggestions } from "@tambo-ai/react";
+import {
+  GenerationStage,
+  useTambo,
+  useTamboSuggestions,
+} from "@tambo-ai/react";
 import { Loader2Icon } from "lucide-react";
 import * as React from "react";
 import { useEffect, useRef } from "react";
@@ -24,7 +25,7 @@ import { useEffect, useRef } from "react";
 interface MessageSuggestionsContextValue {
   suggestions: Suggestion[];
   selectedSuggestionId: string | null;
-  accept: (options: { suggestion: Suggestion }) => void;
+  accept: (options: { suggestion: Suggestion }) => Promise<void>;
   isGenerating: boolean;
   error: Error | null;
   thread: TamboThread;
@@ -58,8 +59,7 @@ const useMessageSuggestionsContext = () => {
  * Props for the MessageSuggestions component.
  * Extends standard HTMLDivElement attributes.
  */
-export interface MessageSuggestionsProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+export interface MessageSuggestionsProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Maximum number of suggestions to display (default: 3) */
   maxSuggestions?: number;
   /** The child elements to render within the container. */
@@ -183,7 +183,7 @@ const MessageSuggestions = React.forwardRef<
           if (!isNaN(keyNum) && keyNum > 0 && keyNum <= suggestions.length) {
             event.preventDefault();
             const suggestionIndex = keyNum - 1;
-            accept({ suggestion: suggestions[suggestionIndex] as Suggestion });
+            void accept({ suggestion: suggestions[suggestionIndex] });
           }
         }
       };
@@ -250,7 +250,8 @@ const MessageSuggestionsStatus = React.forwardRef<
         "p-2 rounded-md text-sm bg-transparent",
         !error &&
           !isGenerating &&
-          (!thread?.generationStage || thread.generationStage === "COMPLETE")
+          (!thread?.generationStage ||
+            thread.generationStage === GenerationStage.COMPLETE)
           ? "p-0 min-h-0 mb-0"
           : "",
         className,
@@ -267,19 +268,39 @@ const MessageSuggestionsStatus = React.forwardRef<
 
       {/* Always render a container for generation stage to prevent layout shifts */}
       <div className="generation-stage-container">
-        {thread?.generationStage && thread.generationStage !== "COMPLETE" ? (
-          <MessageGenerationStage />
-        ) : isGenerating ? (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2Icon className="h-4 w-4 animate-spin" />
-            <p>Generating suggestions...</p>
-          </div>
-        ) : null}
+        <GenerationStageContent
+          generationStage={thread?.generationStage}
+          isGenerating={isGenerating}
+        />
       </div>
     </div>
   );
 });
 MessageSuggestionsStatus.displayName = "MessageSuggestions.Status";
+
+/**
+ * Internal component to render generation stage content
+ */
+function GenerationStageContent({
+  generationStage,
+  isGenerating,
+}: {
+  generationStage?: string;
+  isGenerating: boolean;
+}) {
+  if (generationStage && generationStage !== GenerationStage.COMPLETE) {
+    return <MessageGenerationStage />;
+  }
+  if (isGenerating) {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Loader2Icon className="h-4 w-4 animate-spin" />
+        <p>Generating suggestions...</p>
+      </div>
+    );
+  }
+  return null;
+}
 
 /**
  * Props for the MessageSuggestionsList component.
@@ -338,11 +359,10 @@ const MessageSuggestionsList = React.forwardRef<
                 className={cn(
                   "py-2 px-2.5 rounded-2xl text-xs transition-colors",
                   "border border-flat",
-                  isGenerating
-                    ? "bg-muted/50 text-muted-foreground"
-                    : selectedSuggestionId === suggestion.id
-                      ? "bg-accent text-accent-foreground"
-                      : "bg-background hover:bg-accent hover:text-accent-foreground",
+                  getSuggestionButtonClassName({
+                    isGenerating,
+                    isSelected: selectedSuggestionId === suggestion.id,
+                  }),
                 )}
                 onClick={async () =>
                   !isGenerating && (await accept({ suggestion }))
@@ -370,4 +390,29 @@ const MessageSuggestionsList = React.forwardRef<
 });
 MessageSuggestionsList.displayName = "MessageSuggestions.List";
 
-export { MessageSuggestions, MessageSuggestionsStatus, MessageSuggestionsList };
+/**
+ * Internal function to get className for suggestion button based on state
+ */
+function getSuggestionButtonClassName({
+  isGenerating,
+  isSelected,
+}: {
+  isGenerating: boolean;
+  isSelected: boolean;
+}) {
+  if (isGenerating) {
+    return "bg-muted/50 text-muted-foreground";
+  }
+  if (isSelected) {
+    return "bg-accent text-accent-foreground";
+  }
+  return "bg-background hover:bg-accent hover:text-accent-foreground";
+}
+
+export {
+  MessageSuggestions,
+  MessageSuggestionsList,
+  MessageSuggestionsStatus,
+  Tooltip,
+  TooltipProvider,
+};

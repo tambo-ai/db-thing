@@ -1,8 +1,18 @@
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+let ai: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!ai) {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY environment variable is not set');
+    }
+    ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
+  }
+  return ai;
+}
 
 export const generateDatabaseSchema = async (
   description: string,
@@ -82,7 +92,7 @@ Make sure to use these exact property names: isPrimaryKey (not primaryKey), isUn
 
   try {
     console.log('Generating database schema with Gemini AI...');
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
       config: {

@@ -1,4 +1,4 @@
-import { turso } from '@/lib/turso';
+import { getTurso } from '@/lib/turso';
 import { NextRequest, NextResponse } from 'next/server';
 
 // POST /api/schema { code, data }
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    await turso.execute(
+    await getTurso().execute(
       'INSERT OR REPLACE INTO schemas (code, data, created_at) VALUES (?, ?, datetime("now"))',
       [code, JSON.stringify(data)],
     );
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     if (!code) {
       return NextResponse.json({ error: 'Missing code' }, { status: 400 });
     }
-    const result = await turso.execute(
+    const result = await getTurso().execute(
       'SELECT data FROM schemas WHERE code = ?',
       [code],
     );

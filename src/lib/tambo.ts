@@ -35,79 +35,45 @@ export const tools: TamboTool[] = [
     description:
       'Generate a database schema from a natural language description. Provide a description of what the database should handle and it will create tables, columns, relationships, and constraints.',
     tool: getDatabaseSchemaForTool,
-    toolSchema: z
-      .function()
-      .args(
-        z.object({
-          description: z
-            .string()
-            .describe('Description of the database requirements'),
-          currentSchema: z
-            .string()
-            .optional()
-            .describe('Current schema to modify/extend (JSON format)'),
-        }),
-      )
-      .returns(
-        z.array(
+    inputSchema: z.object({
+      description: z
+        .string()
+        .describe('Description of the database requirements'),
+      currentSchema: z
+        .string()
+        .optional()
+        .describe('Current schema to modify/extend (JSON format)'),
+    }),
+    outputSchema: z.array(
+      z.object({
+        name: z.string(),
+        columns: z.array(
           z.object({
             name: z.string(),
-            columns: z.array(
-              z.object({
-                name: z.string(),
-                type: z.string(),
-                nullable: z.boolean(),
-                defaultValue: z.string().optional(),
-                isPrimaryKey: z.boolean(),
-                isUnique: z.boolean(),
-                foreignKey: z
-                  .object({
-                    table: z.string(),
-                    column: z.string(),
-                  })
-                  .optional(),
-              }),
-            ),
+            type: z.string(),
+            nullable: z.boolean(),
+            defaultValue: z.string().optional(),
+            isPrimaryKey: z.boolean(),
+            isUnique: z.boolean(),
+            foreignKey: z
+              .object({
+                table: z.string(),
+                column: z.string(),
+              })
+              .optional(),
           }),
         ),
-      ),
+      }),
+    ),
   },
   {
     name: 'analyzeSchema',
     description:
       'Analyze an existing database schema for potential issues, optimization opportunities, and best practices. Takes the current schema and provides an improved version.',
     tool: analyzeSchemaForTool,
-    toolSchema: z
-      .function()
-      .args(
-        z.object({
-          tables: z
-            .array(
-              z.object({
-                name: z.string(),
-                columns: z.array(
-                  z.object({
-                    name: z.string(),
-                    type: z.string(),
-                    nullable: z.boolean(),
-                    defaultValue: z.string().optional(),
-                    isPrimaryKey: z.boolean(),
-                    isUnique: z.boolean(),
-                    foreignKey: z
-                      .object({
-                        table: z.string(),
-                        column: z.string(),
-                      })
-                      .optional(),
-                  }),
-                ),
-              }),
-            )
-            .describe('Current schema tables to analyze'),
-        }),
-      )
-      .returns(
-        z.array(
+    inputSchema: z.object({
+      tables: z
+        .array(
           z.object({
             name: z.string(),
             columns: z.array(
@@ -127,46 +93,39 @@ export const tools: TamboTool[] = [
               }),
             ),
           }),
+        )
+        .describe('Current schema tables to analyze'),
+    }),
+    outputSchema: z.array(
+      z.object({
+        name: z.string(),
+        columns: z.array(
+          z.object({
+            name: z.string(),
+            type: z.string(),
+            nullable: z.boolean(),
+            defaultValue: z.string().optional(),
+            isPrimaryKey: z.boolean(),
+            isUnique: z.boolean(),
+            foreignKey: z
+              .object({
+                table: z.string(),
+                column: z.string(),
+              })
+              .optional(),
+          }),
         ),
-      ),
+      }),
+    ),
   },
   {
     name: 'generateMigration',
     description:
       'Generate database migration by modifying an existing schema based on new requirements. Takes current tables and a description of changes needed.',
     tool: generateMigrationForTool,
-    toolSchema: z
-      .function()
-      .args(
-        z.object({
-          currentTables: z
-            .array(
-              z.object({
-                name: z.string(),
-                columns: z.array(
-                  z.object({
-                    name: z.string(),
-                    type: z.string(),
-                    nullable: z.boolean(),
-                    defaultValue: z.string().optional(),
-                    isPrimaryKey: z.boolean(),
-                    isUnique: z.boolean(),
-                    foreignKey: z
-                      .object({
-                        table: z.string(),
-                        column: z.string(),
-                      })
-                      .optional(),
-                  }),
-                ),
-              }),
-            )
-            .describe('Current schema tables'),
-          description: z.string().describe('Description of the changes needed'),
-        }),
-      )
-      .returns(
-        z.array(
+    inputSchema: z.object({
+      currentTables: z
+        .array(
           z.object({
             name: z.string(),
             columns: z.array(
@@ -186,45 +145,40 @@ export const tools: TamboTool[] = [
               }),
             ),
           }),
+        )
+        .describe('Current schema tables'),
+      description: z.string().describe('Description of the changes needed'),
+    }),
+    outputSchema: z.array(
+      z.object({
+        name: z.string(),
+        columns: z.array(
+          z.object({
+            name: z.string(),
+            type: z.string(),
+            nullable: z.boolean(),
+            defaultValue: z.string().optional(),
+            isPrimaryKey: z.boolean(),
+            isUnique: z.boolean(),
+            foreignKey: z
+              .object({
+                table: z.string(),
+                column: z.string(),
+              })
+              .optional(),
+          }),
         ),
-      ),
+      }),
+    ),
   },
   {
     name: 'validateSchema',
     description:
       'Validate and fix issues in a database schema for consistency, referential integrity, and design best practices.',
     tool: validateSchemaForTool,
-    toolSchema: z
-      .function()
-      .args(
-        z.object({
-          tables: z
-            .array(
-              z.object({
-                name: z.string(),
-                columns: z.array(
-                  z.object({
-                    name: z.string(),
-                    type: z.string(),
-                    nullable: z.boolean(),
-                    defaultValue: z.string().optional(),
-                    isPrimaryKey: z.boolean(),
-                    isUnique: z.boolean(),
-                    foreignKey: z
-                      .object({
-                        table: z.string(),
-                        column: z.string(),
-                      })
-                      .optional(),
-                  }),
-                ),
-              }),
-            )
-            .describe('Schema tables to validate'),
-        }),
-      )
-      .returns(
-        z.array(
+    inputSchema: z.object({
+      tables: z
+        .array(
           z.object({
             name: z.string(),
             columns: z.array(
@@ -244,45 +198,39 @@ export const tools: TamboTool[] = [
               }),
             ),
           }),
+        )
+        .describe('Schema tables to validate'),
+    }),
+    outputSchema: z.array(
+      z.object({
+        name: z.string(),
+        columns: z.array(
+          z.object({
+            name: z.string(),
+            type: z.string(),
+            nullable: z.boolean(),
+            defaultValue: z.string().optional(),
+            isPrimaryKey: z.boolean(),
+            isUnique: z.boolean(),
+            foreignKey: z
+              .object({
+                table: z.string(),
+                column: z.string(),
+              })
+              .optional(),
+          }),
         ),
-      ),
+      }),
+    ),
   },
   {
     name: 'optimizeSchema',
     description:
       'Optimize a database schema for better performance, normalization, and maintainability.',
     tool: optimizeSchemaForTool,
-    toolSchema: z
-      .function()
-      .args(
-        z.object({
-          tables: z
-            .array(
-              z.object({
-                name: z.string(),
-                columns: z.array(
-                  z.object({
-                    name: z.string(),
-                    type: z.string(),
-                    nullable: z.boolean(),
-                    defaultValue: z.string().optional(),
-                    isPrimaryKey: z.boolean(),
-                    isUnique: z.boolean(),
-                    foreignKey: z
-                      .object({
-                        table: z.string(),
-                        column: z.string(),
-                      })
-                      .optional(),
-                  }),
-                ),
-              }),
-            )
-            .describe('Schema tables to optimize'),
-        }),
-      )
-      .returns(
-        z.array(
+    inputSchema: z.object({
+      tables: z
+        .array(
           z.object({
             name: z.string(),
             columns: z.array(
@@ -302,8 +250,30 @@ export const tools: TamboTool[] = [
               }),
             ),
           }),
+        )
+        .describe('Schema tables to optimize'),
+    }),
+    outputSchema: z.array(
+      z.object({
+        name: z.string(),
+        columns: z.array(
+          z.object({
+            name: z.string(),
+            type: z.string(),
+            nullable: z.boolean(),
+            defaultValue: z.string().optional(),
+            isPrimaryKey: z.boolean(),
+            isUnique: z.boolean(),
+            foreignKey: z
+              .object({
+                table: z.string(),
+                column: z.string(),
+              })
+              .optional(),
+          }),
         ),
-      ),
+      }),
+    ),
   },
 ];
 

@@ -9,13 +9,33 @@ import { setSchemaUpdateCallback } from '@/lib/schema-tools';
 import { TamboProvider } from '@tambo-ai/react';
 import { TamboMcpProvider } from '@tambo-ai/react/mcp';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+
+function useUserContextKey() {
+  const [contextKey, setContextKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storageKey = 'db-design-user-id';
+    let userId = localStorage.getItem(storageKey);
+    if (!userId) {
+      userId = crypto.randomUUID();
+      localStorage.setItem(storageKey, userId);
+    }
+    setContextKey(`database-design-${userId}`);
+  }, []);
+
+  return contextKey;
+}
 
 function ChatContent() {
   const mcpServers = useMcpServers();
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [chatWidth, setChatWidth] = useState(512); // 32rem = 512px
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const contextKey = useUserContextKey();
 
-  const { schemaData, isLoading, updateSchema, setSchemaData } = useSchema();
+  const { schemaData, isLoading, setSchemaData } = useSchema();
 
   // Set up the callback for tools to update schema context
   useEffect(() => {
@@ -28,6 +48,37 @@ function ChatContent() {
     console.log('Schema data changed:', schemaData);
   }, [schemaData]);
 
+  // Resize handlers
+  const startResizing = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback(
+    (e: MouseEvent) => {
+      if (isResizing) {
+        const newWidth = e.clientX;
+        // Clamp between 320px (20rem) and 800px (50rem)
+        setChatWidth(Math.min(800, Math.max(320, newWidth)));
+      }
+    },
+    [isResizing]
+  );
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
   // Note: No automatic loading - users start with empty state
   // Schema will be generated when user interacts with the chat
 
@@ -37,14 +88,18 @@ function ChatContent() {
       components={components}
       tools={tools}
       tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
+      mcpServers={mcpServers}
+      contextKey={contextKey ?? "database-design-tool"}
     >
-      <TamboMcpProvider mcpServers={mcpServers}>
-        <div className='flex h-screen bg-gray-50'>
+      <TamboMcpProvider>
+        <div className={`flex h-screen bg-gray-50 ${isResizing ? 'select-none' : ''}`}>
           {/* Chat Sidebar */}
           <div
-            className={`${
-              isChatOpen ? 'w-96' : 'w-0'
-            } border-r border-gray-200 bg-white transition-all duration-300 flex flex-col relative`}
+            ref={sidebarRef}
+            style={{ width: isChatOpen ? chatWidth : 0 }}
+            className={`border-r border-gray-200 bg-white flex flex-col relative ${
+              isResizing ? '' : 'transition-all duration-300'
+            }`}
           >
             {isChatOpen && (
               <>
@@ -56,8 +111,14 @@ function ChatContent() {
                 </div>
 
                 <div className='flex-1 overflow-hidden'>
-                  <MessageThreadFull contextKey='database-design-tool' />
+                  <MessageThreadFull />
                 </div>
+
+                {/* Resize Handle */}
+                <div
+                  onMouseDown={startResizing}
+                  className='absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 hover:opacity-50 transition-colors'
+                />
               </>
             )}
 

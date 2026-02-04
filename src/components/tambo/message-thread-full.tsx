@@ -1,47 +1,50 @@
-'use client';
+"use client";
 
+import type { messageVariants } from "@/components/tambo/message";
 import {
   MessageInput,
+  MessageInputError,
+  MessageInputFileButton,
+  MessageInputMcpPromptButton,
+  MessageInputMcpResourceButton,
+  MessageInputSubmitButton,
   MessageInputTextarea,
   MessageInputToolbar,
-  MessageInputSubmitButton,
-  MessageInputError,
-  MessageInputMcpConfigButton,
-} from '@/components/tambo/message-input';
+} from "@/components/tambo/message-input";
 import {
   MessageSuggestions,
-  MessageSuggestionsStatus,
   MessageSuggestionsList,
-} from '@/components/tambo/message-suggestions';
-import type { messageVariants } from '@/components/tambo/message';
+  MessageSuggestionsStatus,
+} from "@/components/tambo/message-suggestions";
+import { ScrollableMessageContainer } from "@/components/tambo/scrollable-message-container";
+import { ThreadContainer, useThreadContainerContext } from "./thread-container";
 import {
   ThreadContent,
   ThreadContentMessages,
-} from '@/components/tambo/thread-content';
+} from "@/components/tambo/thread-content";
 import {
-  ThreadContainer,
-  useThreadContainerContext,
-} from '@/components/tambo/thread-container';
-import { ScrollableMessageContainer } from '@/components/tambo/scrollable-message-container';
-import { useMergedRef } from '@/lib/thread-hooks';
-import type { Suggestion } from '@tambo-ai/react';
-import type { VariantProps } from 'class-variance-authority';
-import * as React from 'react';
+  ThreadHistory,
+  ThreadHistoryHeader,
+  ThreadHistoryList,
+  ThreadHistoryNewButton,
+  ThreadHistorySearch,
+} from "@/components/tambo/thread-history";
+import { useMergeRefs } from "@/lib/thread-hooks";
+import type { Suggestion } from "@tambo-ai/react";
+import type { VariantProps } from "class-variance-authority";
+import * as React from "react";
 
 /**
  * Props for the MessageThreadFull component
  */
-export interface MessageThreadFullProps
-  extends React.HTMLAttributes<HTMLDivElement> {
-  /** Optional context key for the thread */
-  contextKey?: string;
+export interface MessageThreadFullProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
    * Controls the visual styling of messages in the thread.
    * Possible values include: "default", "compact", etc.
    * These values are defined in messageVariants from "@/components/tambo/message".
    * @example variant="compact"
    */
-  variant?: VariantProps<typeof messageVariants>['variant'];
+  variant?: VariantProps<typeof messageVariants>["variant"];
 }
 
 /**
@@ -50,62 +53,87 @@ export interface MessageThreadFullProps
 export const MessageThreadFull = React.forwardRef<
   HTMLDivElement,
   MessageThreadFullProps
->(({ className, contextKey, variant, ...props }, ref) => {
-  const { containerRef } = useThreadContainerContext();
-  const mergedRef = useMergedRef<HTMLDivElement | null>(ref, containerRef);
+>(({ className, variant, ...props }, ref) => {
+  const { containerRef, historyPosition } = useThreadContainerContext();
+  const mergedRef = useMergeRefs<HTMLDivElement | null>(ref, containerRef);
+
+  const threadHistorySidebar = (
+    <ThreadHistory position={historyPosition}>
+      <ThreadHistoryHeader />
+      <ThreadHistoryNewButton />
+      <ThreadHistorySearch />
+      <ThreadHistoryList />
+    </ThreadHistory>
+  );
 
   const defaultSuggestions: Suggestion[] = [
     {
-      id: 'suggestion-1',
-      title: 'Get started',
-      detailedSuggestion: 'What can you help me with?',
-      messageId: 'welcome-query',
+      id: "suggestion-1",
+      title: "Get started",
+      detailedSuggestion: "What can you help me with?",
+      messageId: "welcome-query",
     },
     {
-      id: 'suggestion-2',
-      title: 'Learn more',
-      detailedSuggestion: 'Tell me about your capabilities.',
-      messageId: 'capabilities-query',
+      id: "suggestion-2",
+      title: "Learn more",
+      detailedSuggestion: "Tell me about your capabilities.",
+      messageId: "capabilities-query",
     },
     {
-      id: 'suggestion-3',
-      title: 'Examples',
-      detailedSuggestion: 'Show me some example queries I can try.',
-      messageId: 'examples-query',
+      id: "suggestion-3",
+      title: "Examples",
+      detailedSuggestion: "Show me some example queries I can try.",
+      messageId: "examples-query",
     },
   ];
 
   return (
-    <ThreadContainer
-      ref={mergedRef}
-      className={`h-full flex flex-col ${className}`}
-      {...props}
-    >
-      <ScrollableMessageContainer className='flex-1 p-4'>
-        <ThreadContent variant={variant}>
-          <ThreadContentMessages />
-        </ThreadContent>
-      </ScrollableMessageContainer>
-      {/* Message suggestions status */}
-      <MessageSuggestions>
-        <MessageSuggestionsStatus />
-      </MessageSuggestions>
-      {/* Message input */}
-      <div className='p-4 border-t border-gray-200'>
-        <MessageInput contextKey={contextKey}>
-          <MessageInputTextarea />
-          <MessageInputToolbar>
-            <MessageInputMcpConfigButton />
-            <MessageInputSubmitButton />
-          </MessageInputToolbar>
-          <MessageInputError />
-        </MessageInput>
-      </div>
-      {/* Message suggestions */}
-      <MessageSuggestions initialSuggestions={defaultSuggestions}>
-        <MessageSuggestionsList />
-      </MessageSuggestions>
-    </ThreadContainer>
+    <div className="flex h-full w-full">
+      {/* Thread History Sidebar - rendered first if history is on the left */}
+      {historyPosition === "left" && threadHistorySidebar}
+
+      <ThreadContainer
+        ref={mergedRef}
+        disableSidebarSpacing
+        className={className}
+        {...props}
+      >
+        <ScrollableMessageContainer className="p-4">
+          <ThreadContent variant={variant}>
+            <ThreadContentMessages />
+          </ThreadContent>
+        </ScrollableMessageContainer>
+
+        {/* Message suggestions status */}
+        <MessageSuggestions>
+          <MessageSuggestionsStatus />
+        </MessageSuggestions>
+
+        {/* Message input */}
+        <div className="px-4 pb-4">
+          <MessageInput>
+            <MessageInputTextarea placeholder="Type your message or paste images..." />
+            <MessageInputToolbar>
+              <MessageInputFileButton />
+              <MessageInputMcpPromptButton />
+              <MessageInputMcpResourceButton />
+              {/* Uncomment this to enable client-side MCP config modal button */}
+              {/* <MessageInputMcpConfigButton /> */}
+              <MessageInputSubmitButton />
+            </MessageInputToolbar>
+            <MessageInputError />
+          </MessageInput>
+        </div>
+
+        {/* Message suggestions */}
+        <MessageSuggestions initialSuggestions={defaultSuggestions}>
+          <MessageSuggestionsList />
+        </MessageSuggestions>
+      </ThreadContainer>
+
+      {/* Thread History Sidebar - rendered last if history is on the right */}
+      {historyPosition === "right" && threadHistorySidebar}
+    </div>
   );
 });
-MessageThreadFull.displayName = 'MessageThreadFull';
+MessageThreadFull.displayName = "MessageThreadFull";

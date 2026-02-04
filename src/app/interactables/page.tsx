@@ -54,7 +54,6 @@ export default function InteractablesPage() {
 
               <div className='p-4 border-t border-gray-200'>
                 <MessageInput
-                  contextKey='interactables-demo'
                   variant='bordered'
                 >
                   <MessageInputTextarea placeholder='Design database schema...' />
