@@ -89,7 +89,7 @@ function ChatContent() {
       tools={tools}
       tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
       mcpServers={mcpServers}
-      contextKey={contextKey ?? "database-design-tool"}
+      userKey={contextKey ?? "database-design-tool"}
     >
       <TamboMcpProvider>
         <div className={`flex h-screen bg-gray-50 ${isResizing ? 'select-none' : ''}`}>
