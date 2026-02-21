@@ -25,7 +25,6 @@ An AI-powered database design and visualization tool built with Next.js and Tamb
    ```
    Then add your API keys:
    - `NEXT_PUBLIC_TAMBO_API_KEY` - Get from [tambo.co/dashboard](https://tambo.co/dashboard)
-   - `GEMINI_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com/apikey)
    - `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` - Get from [Turso](https://turso.tech/app) (for schema sharing)
 
 4. Start the development server:
@@ -36,26 +35,13 @@ An AI-powered database design and visualization tool built with Next.js and Tamb
 
 ## Tech Stack
 
-- **Next.js 16** with App Router
+- **Next.js 15** with App Router
 - **React 19** with TypeScript
-- **Tambo AI SDK** for AI-powered interactions
+- **Tambo AI SDK** for AI-powered schema streaming
 - **ReactFlow** for interactive ERD diagrams
-- **Gemini AI** for schema generation
 - **Turso** (LibSQL) for schema persistence
 - **Tailwind CSS v4** for styling
 - **Framer Motion** for animations
-
-## AI Tools
-
-The application provides several AI-powered tools for database design:
-
-| Tool | Description |
-|------|-------------|
-| `getDatabaseSchema` | Generate a complete schema from a natural language description |
-| `analyzeSchema` | Analyze existing schemas for issues and optimization opportunities |
-| `generateMigration` | Create migration scripts based on schema change requirements |
-| `validateSchema` | Check schemas for consistency and referential integrity |
-| `optimizeSchema` | Improve schemas for performance and maintainability |
 
 ## Code Generation
 
@@ -82,17 +68,16 @@ src/
 ├── app/
 │   ├── chat/           # Main chat interface
 │   ├── schema/[code]/  # Shared schema viewer
-│   └── api/            # API routes for schema generation
+│   └── api/            # API routes (schema sharing)
 ├── components/
-│   ├── tambo/          # Chat and message components
+│   ├── tambo/          # SchemaCanvas, SchemaDiagram, TableNode, chat components
 │   ├── schema-viewer   # Schema visualization and code tabs
 │   └── ui/             # Reusable UI components
 ├── lib/
-│   ├── tambo.ts        # Component and tool registration
+│   ├── tambo.ts        # Component registration
+│   ├── schema-context  # Shared schema state provider
 │   ├── generators/     # SQL, Prisma, Drizzle code generators
-│   ├── schema-tools.ts # AI tool implementations
 │   └── types.ts        # TypeScript type definitions
-└── services/           # Business logic services
 ```
 
 ## Development

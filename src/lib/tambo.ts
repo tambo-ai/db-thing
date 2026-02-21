@@ -11,271 +11,12 @@
 import { Graph, graphSchema } from '@/components/tambo/graph';
 import { DataCard, dataCardSchema } from '@/components/ui/card-data';
 import {
-  getDatabaseSchemaForTool,
-  analyzeSchemaForTool,
-  generateMigrationForTool,
-  validateSchemaForTool,
-  optimizeSchemaForTool,
-} from '@/lib/schema-tools';
-import type { TamboComponent } from '@tambo-ai/react';
-import { TamboTool } from '@tambo-ai/react';
-import { z } from 'zod';
+  SchemaCanvas,
+  schemaCanvasSchema,
+} from '@/components/tambo/schema-canvas';
+import type { TamboComponent, TamboTool } from '@tambo-ai/react';
 
-/**
- * tools
- *
- * This array contains all the database analysis and generation tools that are registered for use within the application.
- * Each tool is defined with its name, description, and expected props. The tools
- * can be controlled by AI to dynamically analyze schemas, generate migrations, and provide optimization insights.
- */
-
-export const tools: TamboTool[] = [
-  {
-    name: 'getDatabaseSchema',
-    description:
-      'Generate a database schema from a natural language description. Provide a description of what the database should handle and it will create tables, columns, relationships, and constraints.',
-    tool: getDatabaseSchemaForTool,
-    inputSchema: z.object({
-      description: z
-        .string()
-        .describe('Description of the database requirements'),
-      currentSchema: z
-        .string()
-        .optional()
-        .describe('Current schema to modify/extend (JSON format)'),
-    }),
-    outputSchema: z.array(
-      z.object({
-        name: z.string(),
-        columns: z.array(
-          z.object({
-            name: z.string(),
-            type: z.string(),
-            nullable: z.boolean(),
-            defaultValue: z.string().optional(),
-            isPrimaryKey: z.boolean(),
-            isUnique: z.boolean(),
-            foreignKey: z
-              .object({
-                table: z.string(),
-                column: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-      }),
-    ),
-  },
-  {
-    name: 'analyzeSchema',
-    description:
-      'Analyze an existing database schema for potential issues, optimization opportunities, and best practices. Takes the current schema and provides an improved version.',
-    tool: analyzeSchemaForTool,
-    inputSchema: z.object({
-      tables: z
-        .array(
-          z.object({
-            name: z.string(),
-            columns: z.array(
-              z.object({
-                name: z.string(),
-                type: z.string(),
-                nullable: z.boolean(),
-                defaultValue: z.string().optional(),
-                isPrimaryKey: z.boolean(),
-                isUnique: z.boolean(),
-                foreignKey: z
-                  .object({
-                    table: z.string(),
-                    column: z.string(),
-                  })
-                  .optional(),
-              }),
-            ),
-          }),
-        )
-        .describe('Current schema tables to analyze'),
-    }),
-    outputSchema: z.array(
-      z.object({
-        name: z.string(),
-        columns: z.array(
-          z.object({
-            name: z.string(),
-            type: z.string(),
-            nullable: z.boolean(),
-            defaultValue: z.string().optional(),
-            isPrimaryKey: z.boolean(),
-            isUnique: z.boolean(),
-            foreignKey: z
-              .object({
-                table: z.string(),
-                column: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-      }),
-    ),
-  },
-  {
-    name: 'generateMigration',
-    description:
-      'Generate database migration by modifying an existing schema based on new requirements. Takes current tables and a description of changes needed.',
-    tool: generateMigrationForTool,
-    inputSchema: z.object({
-      currentTables: z
-        .array(
-          z.object({
-            name: z.string(),
-            columns: z.array(
-              z.object({
-                name: z.string(),
-                type: z.string(),
-                nullable: z.boolean(),
-                defaultValue: z.string().optional(),
-                isPrimaryKey: z.boolean(),
-                isUnique: z.boolean(),
-                foreignKey: z
-                  .object({
-                    table: z.string(),
-                    column: z.string(),
-                  })
-                  .optional(),
-              }),
-            ),
-          }),
-        )
-        .describe('Current schema tables'),
-      description: z.string().describe('Description of the changes needed'),
-    }),
-    outputSchema: z.array(
-      z.object({
-        name: z.string(),
-        columns: z.array(
-          z.object({
-            name: z.string(),
-            type: z.string(),
-            nullable: z.boolean(),
-            defaultValue: z.string().optional(),
-            isPrimaryKey: z.boolean(),
-            isUnique: z.boolean(),
-            foreignKey: z
-              .object({
-                table: z.string(),
-                column: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-      }),
-    ),
-  },
-  {
-    name: 'validateSchema',
-    description:
-      'Validate and fix issues in a database schema for consistency, referential integrity, and design best practices.',
-    tool: validateSchemaForTool,
-    inputSchema: z.object({
-      tables: z
-        .array(
-          z.object({
-            name: z.string(),
-            columns: z.array(
-              z.object({
-                name: z.string(),
-                type: z.string(),
-                nullable: z.boolean(),
-                defaultValue: z.string().optional(),
-                isPrimaryKey: z.boolean(),
-                isUnique: z.boolean(),
-                foreignKey: z
-                  .object({
-                    table: z.string(),
-                    column: z.string(),
-                  })
-                  .optional(),
-              }),
-            ),
-          }),
-        )
-        .describe('Schema tables to validate'),
-    }),
-    outputSchema: z.array(
-      z.object({
-        name: z.string(),
-        columns: z.array(
-          z.object({
-            name: z.string(),
-            type: z.string(),
-            nullable: z.boolean(),
-            defaultValue: z.string().optional(),
-            isPrimaryKey: z.boolean(),
-            isUnique: z.boolean(),
-            foreignKey: z
-              .object({
-                table: z.string(),
-                column: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-      }),
-    ),
-  },
-  {
-    name: 'optimizeSchema',
-    description:
-      'Optimize a database schema for better performance, normalization, and maintainability.',
-    tool: optimizeSchemaForTool,
-    inputSchema: z.object({
-      tables: z
-        .array(
-          z.object({
-            name: z.string(),
-            columns: z.array(
-              z.object({
-                name: z.string(),
-                type: z.string(),
-                nullable: z.boolean(),
-                defaultValue: z.string().optional(),
-                isPrimaryKey: z.boolean(),
-                isUnique: z.boolean(),
-                foreignKey: z
-                  .object({
-                    table: z.string(),
-                    column: z.string(),
-                  })
-                  .optional(),
-              }),
-            ),
-          }),
-        )
-        .describe('Schema tables to optimize'),
-    }),
-    outputSchema: z.array(
-      z.object({
-        name: z.string(),
-        columns: z.array(
-          z.object({
-            name: z.string(),
-            type: z.string(),
-            nullable: z.boolean(),
-            defaultValue: z.string().optional(),
-            isPrimaryKey: z.boolean(),
-            isUnique: z.boolean(),
-            foreignKey: z
-              .object({
-                table: z.string(),
-                column: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-      }),
-    ),
-  },
-];
+export const tools: TamboTool[] = [];
 
 /**
  * components
@@ -285,6 +26,13 @@ export const tools: TamboTool[] = [
  * can be controlled by AI to dynamically render database schemas, ERDs, and analysis visualizations based on user interactions.
  */
 export const components: TamboComponent[] = [
+  {
+    name: 'SchemaCanvas',
+    description:
+      'Renders a database schema as an interactive Entity Relationship Diagram in the canvas. Use this component whenever the user asks to create, design, or modify a database schema. Supports two modes: Use mode="full" when creating a brand new schema — provide ALL tables. Use mode="update" when the user asks to add, modify, or remove tables from an existing schema — provide ONLY the new or changed tables in "tables", existing tables are preserved automatically. To DELETE tables, pass their names in the "removedTables" array (e.g. removedTables: ["users", "posts"]). Always prefer mode="update" when a schema already exists in the canvas.',
+    component: SchemaCanvas,
+    propsSchema: schemaCanvasSchema,
+  },
   {
     name: 'Graph',
     description:
@@ -299,8 +47,4 @@ export const components: TamboComponent[] = [
     component: DataCard,
     propsSchema: dataCardSchema,
   },
-  // TODO: Add more database-specific components:
-  // - TableSchema component for detailed table visualization
-  // - SQLDisplay component for generated SQL code
-  // - SchemaComparison component for before/after comparisons
 ];

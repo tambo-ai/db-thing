@@ -1,7 +1,9 @@
 import { Table } from '../types';
 
 export const generateSqlCode = (tables: Table[]): string => {
+  if (!tables) return '';
   return tables
+    .filter((table) => table.name && table.columns)
     .map((table) => {
       const columnDefinitions = table.columns
         .map((col) => {

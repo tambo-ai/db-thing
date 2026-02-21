@@ -1,248 +1,156 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import ReactFlow, {
-  Edge,
-  NodeProps,
-  Handle,
-  Position,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   Controls,
   Background,
   BackgroundVariant,
-  MarkerType,
   ReactFlowProvider,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Table, TableColumn } from '@/lib/types';
-import { z } from 'zod';
+import { Table } from '@/lib/types';
+import { TableNode } from './table-node';
+import {
+  EDGE_STYLE,
+  EDGE_MARKER,
+  fingerprint,
+  edgeFingerprint,
+  gridPosition,
+  buildEdges,
+} from './diagram-utils';
 
 interface SchemaDiagramProps {
   tables?: Table[];
-  title?: string;
 }
 
-const TableNode = ({ data }: NodeProps) => {
-  return (
-    <div className='border border-gray-200 bg-white rounded-xl p-0 min-w-[180px] overflow-hidden'>
-      <div className='border-b border-gray-200 py-2 px-3 bg-gray-50'>
-        <div className='font-medium text-sm text-gray-800'>{data.label}</div>
-      </div>
+const nodeTypes = { tableNode: TableNode };
 
-      <div className='p-0'>
-        {data.columns.map((column: TableColumn, index: number) => {
-          const sourceHandleId = `${data.label}-${column.name}-source`;
-          const targetHandleId = `${data.label}-${column.name}-target`;
-
-          return (
-            <div
-              key={index}
-              className='px-3 py-1.5 text-xs border-b border-gray-100 flex items-center justify-between relative last:border-b-0'
-              style={{ minHeight: '28px' }}
-            >
-              <div className='flex items-center gap-1.5'>
-                {column.isPrimaryKey && (
-                  <span
-                    className='text-yellow-600 flex-shrink-0'
-                    title='Primary Key'
-                  >
-                    🔑
-                  </span>
-                )}
-                {column.foreignKey && (
-                  <span
-                    className='text-blue-600 flex-shrink-0'
-                    title={`Foreign Key to ${column.foreignKey.table}.${column.foreignKey.column}`}
-                  >
-                    🔗
-                  </span>
-                )}
-                <span className={`${column.isPrimaryKey ? 'font-medium' : ''}`}>
-                  {column.name}
-                </span>
-                {!column.nullable && (
-                  <span className='text-red-500' title='Not Null'>
-                    *
-                  </span>
-                )}
-              </div>
-
-              <span className='text-gray-500 text-xs ml-2 flex-shrink-0'>
-                {column.type}
-              </span>
-
-              {column.isPrimaryKey && (
-                <Handle
-                  id={targetHandleId}
-                  type='target'
-                  position={Position.Left}
-                  className='!bg-blue-500 !rounded-full !border-2 !border-white !w-3 !h-3'
-                  style={{
-                    top: '50%',
-                    left: -5,
-                    opacity: 1,
-                    zIndex: 10,
-                  }}
-                  isConnectable={false}
-                  data-column={column.name}
-                />
-              )}
-
-              {column.foreignKey && (
-                <Handle
-                  id={sourceHandleId}
-                  type='source'
-                  position={Position.Right}
-                  className='!bg-blue-500 !rounded-full !border-2 !border-white !w-3 !h-3'
-                  style={{
-                    top: '50%',
-                    right: -5,
-                    opacity: 1,
-                    zIndex: 10,
-                  }}
-                  isConnectable={false}
-                  data-column={column.name}
-                  data-target-table={column.foreignKey.table}
-                  data-target-column={column.foreignKey.column}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const nodeTypes = {
-  tableNode: TableNode,
-};
-
+/**
+ * Inner diagram component that must be wrapped in ReactFlowProvider.
+ * Handles node/edge state, streaming-safe updates, and viewport fitting.
+ */
 function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isMounted, setIsMounted] = useState(false);
+  const { fitView } = useReactFlow();
+
+  /** Cached node positions — prevents nodes from jumping when new columns stream in. */
+  const positions = useRef(new Map<string, { x: number; y: number }>());
+
+  /** Column fingerprints — when unchanged, we reuse the same node reference so ReactFlow skips re-rendering. */
+  const fingerprints = useRef(new Map<string, string>());
+
+  /** Tracks the last-seen table count so fitView only fires when a new table appears. */
+  const prevCount = useRef(0);
+
+  /** Stores the pending fitView RAF id so we can cancel it on unmount or re-trigger. */
+  const fitViewRaf = useRef<number | null>(null);
+
+  /** Last edge fingerprint — skip rebuilding edges when FK relationships haven't changed. */
+  const prevEdgeFp = useRef('');
 
   useEffect(() => {
     setIsMounted(true);
+    return () => {
+      if (fitViewRaf.current != null) cancelAnimationFrame(fitViewRaf.current);
+    };
   }, []);
 
-  useEffect(() => {
-    console.log('SchemaDiagram useEffect triggered with tables:', tables);
+  /**
+   * Wraps the default onNodesChange to also persist drag positions
+   * into the positions ref, so they survive streaming re-renders.
+   */
+  const handleNodesChange: typeof onNodesChange = useCallback(
+    (changes) => {
+      onNodesChange(changes);
+      for (const c of changes) {
+        if (c.type === 'position' && c.position && c.id) {
+          positions.current.set(c.id, c.position);
+        }
+      }
+    },
+    [onNodesChange],
+  );
 
-    if (!tables || tables.length === 0) {
+  /**
+   * Main sync effect — runs on every `tables` change (including streaming ticks).
+   * Uses fingerprinting to preserve node object references for unchanged tables,
+   * which prevents ReactFlow from re-rendering/flashing those nodes.
+   */
+  useEffect(() => {
+    if (tables.length === 0) {
       setNodes([]);
       setEdges([]);
+      positions.current.clear();
+      fingerprints.current.clear();
+      prevCount.current = 0;
+      prevEdgeFp.current = '';
       return;
     }
 
-    const calculatePositions = () => {
-      const nodeWidth = 200;
-      const padding = 120;
-      const containerWidth = 1400;
-      const containerHeight = 1000;
+    const valid = tables.filter((t) => t.name);
+    const validNames = new Set(valid.map((t) => t.name));
 
-      const cols = Math.ceil(Math.sqrt(tables.length));
-      const cellWidth = containerWidth / cols;
-      const cellHeight = containerHeight / Math.ceil(tables.length / cols);
+    // Clean up stale fingerprints for removed tables
+    for (const key of fingerprints.current.keys()) {
+      if (!validNames.has(key)) fingerprints.current.delete(key);
+    }
 
-      return tables.map((table, index) => {
-        const row = Math.floor(index / cols);
-        const col = index % cols;
+    setNodes((current) => {
+      const byId = new Map(current.map((n) => [n.id, n]));
 
-        const position = {
-          x: col * cellWidth + (cellWidth - nodeWidth) / 2,
-          y: row * cellHeight + padding,
-        };
+      return valid.map((table, i) => {
+        const cols = table.columns ?? [];
+        const fp = fingerprint(cols);
+        const prev = byId.get(table.name);
+
+        if (prev && fingerprints.current.get(table.name) === fp) return prev;
+
+        fingerprints.current.set(table.name, fp);
 
         return {
           id: table.name,
-          type: 'tableNode',
-          position,
-          data: {
-            label: table.name,
-            columns: table.columns,
-          },
+          type: 'tableNode' as const,
+          position:
+            prev?.position ??
+            positions.current.get(table.name) ??
+            gridPosition(i, valid.length),
+          data: { label: table.name, columns: cols },
         };
       });
-    };
+    });
 
-    const generateRelationEdges = () => {
-      const relationEdges: Edge[] = [];
+    const eFp = edgeFingerprint(valid);
+    if (eFp !== prevEdgeFp.current) {
+      prevEdgeFp.current = eFp;
+      setEdges(buildEdges(valid));
+    }
 
-      tables.forEach((table) => {
-        table.columns.forEach((column) => {
-          if (column.foreignKey) {
-            const sourceTableId = table.name;
-            const targetTableId = column.foreignKey.table;
-
-            if (tables.some((t) => t.name === targetTableId)) {
-              const edgeId = `${sourceTableId}-${column.name}-${targetTableId}`;
-
-              relationEdges.push({
-                id: edgeId,
-                source: sourceTableId,
-                target: targetTableId,
-                sourceHandle: `${sourceTableId}-${column.name}-source`,
-                targetHandle: `${targetTableId}-${column.foreignKey.column}-target`,
-                type: 'default',
-                animated: true,
-                style: {
-                  stroke: '#3b82f6',
-                  strokeWidth: 1,
-                  strokeDasharray: '4 3',
-                },
-                markerEnd: {
-                  type: MarkerType.ArrowClosed,
-                  color: '#3b82f6',
-                  width: 8,
-                  height: 8,
-                },
-                label: `${column.name} → ${column.foreignKey.column}`,
-                labelStyle: {
-                  fill: '#3b82f6',
-                  fontSize: 10,
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                },
-                labelBgPadding: [4, 2],
-                labelBgBorderRadius: 4,
-                labelBgStyle: {
-                  fill: '#f0f7ff',
-                  fillOpacity: 0.8,
-                },
-                labelShowBg: true,
-              });
-            }
-          }
-        });
+    if (valid.length !== prevCount.current) {
+      prevCount.current = valid.length;
+      if (fitViewRaf.current != null) cancelAnimationFrame(fitViewRaf.current);
+      fitViewRaf.current = requestAnimationFrame(() => {
+        fitViewRaf.current = null;
+        fitView({ padding: 0.1, duration: 200 });
       });
-
-      return relationEdges;
-    };
-
-    const tableNodes = calculatePositions();
-    const relationEdges = generateRelationEdges();
-
-    console.log('Generated nodes:', tableNodes);
-    console.log('Generated edges:', relationEdges);
-
-    setNodes(tableNodes);
-    setEdges(relationEdges);
-  }, [tables, setNodes, setEdges]);
+    }
+  }, [tables, setNodes, setEdges, fitView]);
 
   if (!isMounted) {
     return (
       <div className='h-full w-full border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center'>
-        <div className='text-center text-gray-500'>
-          <div className='text-lg font-medium mb-2'>Loading Diagram...</div>
+        <div className='text-lg font-medium text-gray-500'>
+          Loading Diagram...
         </div>
       </div>
     );
   }
 
-  if (!tables || tables.length === 0) {
+  if (tables.length === 0) {
     return (
       <div className='h-full w-full border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center'>
         <div className='text-center text-gray-500'>
@@ -255,53 +163,25 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
     );
   }
 
-  console.log('SchemaDiagram rendering with:', {
-    tablesLength: tables.length,
-    nodesLength: nodes.length,
-    edgesLength: edges.length,
-    isMounted,
-  });
-
   return (
     <div className='h-full w-full border border-gray-200 rounded-lg bg-white overflow-hidden relative'>
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.1, includeHiddenNodes: true }}
         defaultEdgeOptions={{
           type: 'default',
-          style: {
-            stroke: '#3b82f6',
-            strokeWidth: 1,
-            strokeDasharray: '4 3',
-          },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#3b82f6',
-            width: 8,
-            height: 8,
-          },
+          style: EDGE_STYLE,
+          markerEnd: EDGE_MARKER,
         }}
-        connectionLineStyle={{
-          stroke: '#3b82f6',
-          strokeWidth: 1,
-          strokeDasharray: '4 3',
-        }}
-        attributionPosition='bottom-right'
+        connectionLineStyle={EDGE_STYLE}
         minZoom={0.1}
         maxZoom={1.5}
-        elementsSelectable={true}
-        selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}
-        snapToGrid={true}
+        snapToGrid
         snapGrid={[10, 10]}
-        panOnDrag={true}
-        zoomOnScroll={true}
-        zoomOnPinch={true}
         zoomOnDoubleClick={false}
       >
         <Background
@@ -322,41 +202,15 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
   );
 }
 
+/**
+ * Interactive Entity Relationship Diagram rendered with ReactFlow.
+ * Accepts a `tables` array that can be streamed in progressively —
+ * only nodes whose columns actually changed will re-render.
+ */
 export function SchemaDiagram(props: SchemaDiagramProps) {
-  console.log('SchemaDiagram props:', props);
-  console.log('SchemaDiagram tables length:', props.tables?.length || 0);
-  console.log('SchemaDiagram tables data:', props.tables);
-
   return (
     <ReactFlowProvider>
       <SchemaDiagramInner {...props} />
     </ReactFlowProvider>
   );
 }
-
-export const schemaDiagramSchema = z.object({
-  tables: z
-    .array(
-      z.object({
-        name: z.string(),
-        columns: z.array(
-          z.object({
-            name: z.string(),
-            type: z.string(),
-            nullable: z.boolean(),
-            defaultValue: z.string().optional(),
-            isPrimaryKey: z.boolean(),
-            isUnique: z.boolean(),
-            foreignKey: z
-              .object({
-                table: z.string(),
-                column: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-      }),
-    )
-    .optional(),
-  title: z.string().optional(),
-});

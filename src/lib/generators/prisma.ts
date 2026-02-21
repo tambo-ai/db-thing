@@ -20,7 +20,9 @@ const toCamelCase = (str: string) => {
 };
 
 export const generatePrismaSchema = (tables: Table[]): string => {
+  if (!tables) return '';
   const models = tables
+    .filter((table) => table.name && table.columns)
     .map((table) => {
       const modelName = toPascalCase(table.name);
 

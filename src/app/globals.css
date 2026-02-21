@@ -111,6 +111,16 @@ body {
   font-family: 'Poppins', sans-serif;
 }
 
+/* TipTap editor placeholder - required for @tiptap/extension-placeholder to display */
+.tiptap .is-empty.is-editor-empty::before {
+  content: attr(data-placeholder) !important;
+  color: var(--muted-foreground);
+  opacity: 0.5;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
