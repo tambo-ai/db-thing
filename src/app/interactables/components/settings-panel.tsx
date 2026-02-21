@@ -1,6 +1,6 @@
 "use client";
 
-import { withInteractable } from "@tambo-ai/react";
+import { withTamboInteractable } from "@tambo-ai/react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
@@ -350,7 +350,7 @@ function SettingsPanelBase(props: SettingsProps) {
 }
 
 // Create the interactable component
-const InteractableSettingsPanel = withInteractable(SettingsPanelBase, {
+const InteractableSettingsPanel = withTamboInteractable(SettingsPanelBase, {
   componentName: "SettingsForm",
   description:
     "User settings form with personal info, notifications, and preferences",
