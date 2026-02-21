@@ -62,7 +62,7 @@ export function buildEdges(tables: Table[]): Edge[] {
       if (!col.foreignKey || !tableNames.has(col.foreignKey.table)) continue;
 
       edges.push({
-        id: `${table.name}-${col.name}-${col.foreignKey.table}`,
+        id: `${table.name}-${col.name}-${col.foreignKey.table}-${col.foreignKey.column}`,
         source: table.name,
         target: col.foreignKey.table,
         sourceHandle: `${table.name}-${col.name}-source`,

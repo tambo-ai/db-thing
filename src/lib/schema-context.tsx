@@ -6,7 +6,7 @@ import { Table } from './types';
 interface SchemaContextType {
   schemaData: Table[];
   isStreaming: boolean;
-  setSchemaData: (tables: Table[]) => void;
+  setSchemaData: (tables: Table[] | ((current: Table[]) => Table[])) => void;
   setIsStreaming: (streaming: boolean) => void;
 }
 

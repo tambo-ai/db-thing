@@ -46,7 +46,15 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
   /** Tracks the last-seen table count so fitView only fires when a new table appears. */
   const prevCount = useRef(0);
 
-  useEffect(() => setIsMounted(true), []);
+  /** Stores the pending fitView RAF id so we can cancel it on unmount or re-trigger. */
+  const fitViewRaf = useRef<number | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => {
+      if (fitViewRaf.current != null) cancelAnimationFrame(fitViewRaf.current);
+    };
+  }, []);
 
   /**
    * Wraps the default onNodesChange to also persist drag positions
@@ -109,7 +117,11 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
 
     if (valid.length !== prevCount.current) {
       prevCount.current = valid.length;
-      requestAnimationFrame(() => fitView({ padding: 0.1, duration: 200 }));
+      if (fitViewRaf.current != null) cancelAnimationFrame(fitViewRaf.current);
+      fitViewRaf.current = requestAnimationFrame(() => {
+        fitViewRaf.current = null;
+        fitView({ padding: 0.1, duration: 200 });
+      });
     }
   }, [tables, setNodes, setEdges, fitView]);
 

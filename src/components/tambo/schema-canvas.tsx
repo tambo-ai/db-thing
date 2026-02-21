@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useTamboStreamStatus } from '@tambo-ai/react';
 import { useSchema } from '@/lib/schema-context';
 import { Table } from '@/lib/types';
@@ -8,24 +8,31 @@ import { z } from 'zod';
 
 interface SchemaCanvasProps {
   tables?: Table[];
+  removedTables?: string[];
   mode?: 'full' | 'update';
 }
 
 /**
- * Merges incoming tables with the existing schema.
+ * Merges incoming tables into the current schema.
  * - Tables with matching names are replaced (updated).
  * - New tables are appended.
- * - Existing tables not in the incoming set are kept as-is.
+ * - Tables listed in `removed` are dropped.
+ * - Existing tables not in `incoming` or `removed` are kept as-is.
  */
-function mergeTables(existing: Table[], incoming: Table[]): Table[] {
+function mergeTables(
+  existing: Table[],
+  incoming: Table[],
+  removed: string[] = [],
+): Table[] {
+  const removedSet = new Set(removed);
   const merged = new Map<string, Table>();
 
-  // Start with all existing tables
   for (const table of existing) {
-    merged.set(table.name, table);
+    if (!removedSet.has(table.name)) {
+      merged.set(table.name, table);
+    }
   }
 
-  // Upsert incoming tables
   for (const table of incoming) {
     if (table.name) {
       merged.set(table.name, table);
@@ -35,29 +42,31 @@ function mergeTables(existing: Table[], incoming: Table[]): Table[] {
   return Array.from(merged.values());
 }
 
-export function SchemaCanvas({ tables, mode = 'full' }: SchemaCanvasProps) {
+export function SchemaCanvas({
+  tables,
+  removedTables,
+  mode = 'full',
+}: SchemaCanvasProps) {
   const { streamStatus } = useTamboStreamStatus<SchemaCanvasProps>();
-  const { schemaData, setSchemaData, setIsStreaming } = useSchema();
-  // Capture the existing schema at mount time so merges are stable
-  const existingAtMount = useRef<Table[]>(schemaData);
+  const { setSchemaData, setIsStreaming } = useSchema();
 
-  // Sync streaming tables to schema context
+  /** Sync streaming tables to schema context. */
   useEffect(() => {
     if (!tables || tables.length === 0) return;
 
     if (mode === 'update') {
-      // Merge: keep existing tables, upsert incoming ones
-      const merged = mergeTables(existingAtMount.current, tables);
-      setSchemaData(merged);
+      setSchemaData((current) =>
+        mergeTables(current, tables, removedTables),
+      );
     } else {
-      // Full replace
       setSchemaData(tables);
     }
-  }, [tables, mode, setSchemaData]);
+  }, [tables, removedTables, mode, setSchemaData]);
 
-  // Sync streaming state
+  /** Sync streaming state, resetting on unmount so it never gets stuck. */
   useEffect(() => {
     setIsStreaming(streamStatus.isStreaming || streamStatus.isPending);
+    return () => setIsStreaming(false);
   }, [streamStatus.isStreaming, streamStatus.isPending, setIsStreaming]);
 
   if (streamStatus.isPending) {
@@ -169,5 +178,11 @@ export const schemaCanvasSchema = z.object({
     .optional()
     .describe(
       'The tables to render. In "full" mode, provide ALL tables for the complete schema. In "update" mode, provide ONLY the new or modified tables — existing unchanged tables are preserved automatically.',
+    ),
+  removedTables: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Table names to remove from the schema. Only used in "update" mode.',
     ),
 });
