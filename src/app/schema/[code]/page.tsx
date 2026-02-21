@@ -91,7 +91,6 @@ export default function SharedSchemaPage() {
       <div className='h-[calc(100vh-65px)]'>
         <SchemaViewer
           schemaData={schema ?? []}
-          isLoading={loading}
           viewType={viewType}
         />
       </div>

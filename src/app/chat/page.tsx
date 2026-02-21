@@ -5,7 +5,6 @@ import { SchemaViewer } from '@/components/schema-viewer';
 import { useMcpServers } from '@/components/tambo/mcp-config-modal';
 import { components, tools } from '@/lib/tambo';
 import { SchemaProvider, useSchema } from '@/lib/schema-context';
-import { setSchemaUpdateCallback } from '@/lib/schema-tools';
 import { TamboProvider } from '@tambo-ai/react';
 import { TamboMcpProvider } from '@tambo-ai/react/mcp';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -35,18 +34,7 @@ function ChatContent() {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const contextKey = useUserContextKey();
 
-  const { schemaData, isLoading, setSchemaData } = useSchema();
-
-  // Set up the callback for tools to update schema context
-  useEffect(() => {
-    console.log('Setting up schema update callback');
-    setSchemaUpdateCallback(setSchemaData);
-  }, [setSchemaData]);
-
-  // Debug schemaData changes
-  useEffect(() => {
-    console.log('Schema data changed:', schemaData);
-  }, [schemaData]);
+  const { schemaData, isStreaming } = useSchema();
 
   // Resize handlers
   const startResizing = useCallback(() => {
@@ -78,9 +66,6 @@ function ChatContent() {
       window.removeEventListener('mouseup', stopResizing);
     };
   }, [isResizing, resize, stopResizing]);
-
-  // Note: No automatic loading - users start with empty state
-  // Schema will be generated when user interacts with the chat
 
   return (
     <TamboProvider
@@ -136,7 +121,7 @@ function ChatContent() {
           </div>
 
           {/* Main Content Area */}
-          <SchemaViewer schemaData={schemaData} isLoading={isLoading} />
+          <SchemaViewer schemaData={schemaData} isStreaming={isStreaming} />
         </div>
       </TamboMcpProvider>
     </TamboProvider>

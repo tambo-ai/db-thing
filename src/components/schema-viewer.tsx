@@ -7,35 +7,9 @@ import { generateDrizzleSchema } from '@/lib/generators/drizzle';
 import { Table } from '@/lib/types';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Share2, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
-
-function AnimatedLoadingText({
-  variant = 'dark',
-}: {
-  variant?: 'dark' | 'light';
-}) {
-  const [dotCount, setDotCount] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDotCount((prev) => (prev + 1) % 4);
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const textColor = variant === 'light' ? 'text-gray-400' : 'text-gray-700';
-
-  return (
-    <div className='text-center'>
-      <p className={`text-lg font-medium ${textColor}`}>
-        Designing database{'.'.repeat(dotCount)}
-      </p>
-    </div>
-  );
-}
 
 function EmptySchemaState() {
   return (
@@ -160,13 +134,13 @@ function generateShareCode(): string {
 
 interface SchemaViewerProps {
   schemaData: Table[];
-  isLoading: boolean;
+  isStreaming?: boolean;
   viewType?: 'normal' | 'shared';
 }
 
 export function SchemaViewer({
   schemaData,
-  isLoading,
+  isStreaming = false,
   viewType = 'normal',
 }: SchemaViewerProps) {
   const safeSchemaData = schemaData ?? [];
@@ -178,12 +152,6 @@ export function SchemaViewer({
   const [shareUrl, setShareUrl] = useState('');
   const [shareLoading, setShareLoading] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
-
-  console.log('SchemaViewer received:', {
-    schemaDataLength: schemaData?.length || 0,
-    isLoading,
-    schemaData,
-  });
 
   const handleShare = async () => {
     if (safeSchemaData.length === 0) return;
@@ -281,7 +249,7 @@ export function SchemaViewer({
           </div>
 
           {/* Action Buttons */}
-          {safeSchemaData.length > 0 && !isLoading && (
+          {safeSchemaData.length > 0 && !isStreaming && (
             <div className='flex items-center gap-3'>
               {viewType === 'shared' && (
                 <Link
@@ -315,14 +283,21 @@ export function SchemaViewer({
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
-              {isLoading ? (
-                <div className='flex items-center justify-center h-full'>
-                  <AnimatedLoadingText />
-                </div>
-              ) : safeSchemaData.length === 0 ? (
+              {safeSchemaData.length === 0 ? (
                 <EmptySchemaState />
               ) : (
-                <SchemaDiagram tables={safeSchemaData} />
+                <div className='relative h-full'>
+                  <SchemaDiagram tables={safeSchemaData} />
+                  {isStreaming && (
+                    <div className='absolute top-4 right-4 z-20 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2'>
+                      <div className='w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin' />
+                      <span className='text-sm text-blue-700'>
+                        Streaming... {safeSchemaData.length}{' '}
+                        {safeSchemaData.length === 1 ? 'table' : 'tables'}
+                      </span>
+                    </div>
+                  )}
+                </div>
               )}
             </motion.div>
           ) : (
@@ -426,11 +401,7 @@ export function SchemaViewer({
 
               {/* Code Content */}
               <div className='flex-1'>
-                {isLoading ? (
-                  <div className='bg-gray-900 rounded-2xl p-6 h-full flex items-center justify-center'>
-                    <AnimatedLoadingText variant='light' />
-                  </div>
-                ) : safeSchemaData.length === 0 ? (
+                {safeSchemaData.length === 0 ? (
                   <div className='bg-gray-900 rounded-2xl p-6 h-full flex items-center justify-center'>
                     <div className='text-center'>
                       <p className='text-gray-400 text-lg mb-2'>

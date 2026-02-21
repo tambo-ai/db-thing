@@ -14,9 +14,11 @@ const toCamelCase = (str: string) => {
 };
 
 export const generateDrizzleSchema = (tables: Table[]): string => {
+  if (!tables) return '';
   const imports = new Set<string>(['pgTable']);
 
   const tableCode = tables
+    .filter((table) => table.name && table.columns)
     .map((table) => {
       const tableNameCamel = toCamelCase(table.name);
       const columnsCode = table.columns

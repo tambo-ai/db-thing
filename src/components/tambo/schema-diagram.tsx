@@ -16,11 +16,9 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Table, TableColumn } from '@/lib/types';
-import { z } from 'zod';
 
 interface SchemaDiagramProps {
   tables?: Table[];
-  title?: string;
 }
 
 const TableNode = ({ data }: NodeProps) => {
@@ -31,7 +29,7 @@ const TableNode = ({ data }: NodeProps) => {
       </div>
 
       <div className='p-0'>
-        {data.columns.map((column: TableColumn, index: number) => {
+        {(data.columns ?? []).map((column: TableColumn, index: number) => {
           const sourceHandleId = `${data.label}-${column.name}-source`;
           const targetHandleId = `${data.label}-${column.name}-target`;
 
@@ -129,8 +127,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
   }, []);
 
   useEffect(() => {
-    console.log('SchemaDiagram useEffect triggered with tables:', tables);
-
     if (!tables || tables.length === 0) {
       setNodes([]);
       setEdges([]);
@@ -147,32 +143,34 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
       const cellWidth = containerWidth / cols;
       const cellHeight = containerHeight / Math.ceil(tables.length / cols);
 
-      return tables.map((table, index) => {
-        const row = Math.floor(index / cols);
-        const col = index % cols;
+      return tables
+        .filter((table) => table.name)
+        .map((table, index) => {
+          const row = Math.floor(index / cols);
+          const col = index % cols;
 
-        const position = {
-          x: col * cellWidth + (cellWidth - nodeWidth) / 2,
-          y: row * cellHeight + padding,
-        };
+          const position = {
+            x: col * cellWidth + (cellWidth - nodeWidth) / 2,
+            y: row * cellHeight + padding,
+          };
 
-        return {
-          id: table.name,
-          type: 'tableNode',
-          position,
-          data: {
-            label: table.name,
-            columns: table.columns,
-          },
-        };
-      });
+          return {
+            id: table.name,
+            type: 'tableNode',
+            position,
+            data: {
+              label: table.name,
+              columns: table.columns ?? [],
+            },
+          };
+        });
     };
 
     const generateRelationEdges = () => {
       const relationEdges: Edge[] = [];
 
       tables.forEach((table) => {
-        table.columns.forEach((column) => {
+        (table.columns ?? []).forEach((column) => {
           if (column.foreignKey) {
             const sourceTableId = table.name;
             const targetTableId = column.foreignKey.table;
@@ -225,9 +223,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
     const tableNodes = calculatePositions();
     const relationEdges = generateRelationEdges();
 
-    console.log('Generated nodes:', tableNodes);
-    console.log('Generated edges:', relationEdges);
-
     setNodes(tableNodes);
     setEdges(relationEdges);
   }, [tables, setNodes, setEdges]);
@@ -254,13 +249,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
       </div>
     );
   }
-
-  console.log('SchemaDiagram rendering with:', {
-    tablesLength: tables.length,
-    nodesLength: nodes.length,
-    edgesLength: edges.length,
-    isMounted,
-  });
 
   return (
     <div className='h-full w-full border border-gray-200 rounded-lg bg-white overflow-hidden relative'>
@@ -323,10 +311,6 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
 }
 
 export function SchemaDiagram(props: SchemaDiagramProps) {
-  console.log('SchemaDiagram props:', props);
-  console.log('SchemaDiagram tables length:', props.tables?.length || 0);
-  console.log('SchemaDiagram tables data:', props.tables);
-
   return (
     <ReactFlowProvider>
       <SchemaDiagramInner {...props} />
@@ -334,29 +318,3 @@ export function SchemaDiagram(props: SchemaDiagramProps) {
   );
 }
 
-export const schemaDiagramSchema = z.object({
-  tables: z
-    .array(
-      z.object({
-        name: z.string(),
-        columns: z.array(
-          z.object({
-            name: z.string(),
-            type: z.string(),
-            nullable: z.boolean(),
-            defaultValue: z.string().optional(),
-            isPrimaryKey: z.boolean(),
-            isUnique: z.boolean(),
-            foreignKey: z
-              .object({
-                table: z.string(),
-                column: z.string(),
-              })
-              .optional(),
-          }),
-        ),
-      }),
-    )
-    .optional(),
-  title: z.string().optional(),
-});
