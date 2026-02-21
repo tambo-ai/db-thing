@@ -29,7 +29,7 @@ export const components: TamboComponent[] = [
   {
     name: 'SchemaCanvas',
     description:
-      'Renders a database schema as an interactive Entity Relationship Diagram in the canvas. Use this component whenever the user asks to create, design, or modify a database schema. Supports two modes: Use mode="full" when creating a brand new schema — provide ALL tables. Use mode="update" when the user asks to add, modify, or remove tables from an existing schema — provide ONLY the new or changed tables, existing tables are preserved automatically. Always prefer mode="update" when a schema already exists in the canvas.',
+      'Renders a database schema as an interactive Entity Relationship Diagram in the canvas. Use this component whenever the user asks to create, design, or modify a database schema. Supports two modes: Use mode="full" when creating a brand new schema — provide ALL tables. Use mode="update" when the user asks to add, modify, or remove tables from an existing schema — provide ONLY the new or changed tables in "tables", existing tables are preserved automatically. To DELETE tables, pass their names in the "removedTables" array (e.g. removedTables: ["users", "posts"]). Always prefer mode="update" when a schema already exists in the canvas.',
     component: SchemaCanvas,
     propsSchema: schemaCanvasSchema,
   },

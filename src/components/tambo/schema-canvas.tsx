@@ -52,14 +52,17 @@ export function SchemaCanvas({
 
   /** Sync streaming tables to schema context. */
   useEffect(() => {
-    if (!tables || tables.length === 0) return;
+    const hasTables = tables && tables.length > 0;
+    const hasRemovals = removedTables && removedTables.length > 0;
+
+    if (!hasTables && !hasRemovals) return;
 
     if (mode === 'update') {
       setSchemaData((current) =>
-        mergeTables(current, tables, removedTables),
+        mergeTables(current, tables ?? [], removedTables),
       );
     } else {
-      setSchemaData(tables);
+      if (hasTables) setSchemaData(tables);
     }
   }, [tables, removedTables, mode, setSchemaData]);
 
