@@ -18,9 +18,9 @@ export const TableNode = ({ data }: NodeProps) => (
     </div>
 
     <div>
-      {(data.columns ?? []).map((column: TableColumn) => (
+      {(data.columns ?? []).map((column: TableColumn, i: number) => (
         <div
-          key={column.name}
+          key={column.name ?? i}
           className='px-3 py-1.5 text-xs border-b border-gray-100 flex items-center justify-between relative last:border-b-0'
           style={{ minHeight: 28 }}
         >
