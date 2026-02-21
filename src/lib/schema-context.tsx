@@ -6,7 +6,7 @@ import { Table } from './types';
 interface SchemaContextType {
   schemaData: Table[];
   isStreaming: boolean;
-  setSchemaData: (tables: Table[] | ((current: Table[]) => Table[])) => void;
+  setSchemaData: React.Dispatch<React.SetStateAction<Table[]>>;
   setIsStreaming: (streaming: boolean) => void;
 }
 

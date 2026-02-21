@@ -39,6 +39,7 @@ export function fingerprint(columns: TableColumn[]): string {
  * @param total - Total number of tables (determines grid dimensions)
  */
 export function gridPosition(index: number, total: number) {
+  if (total <= 0) return { x: 0, y: 120 };
   const cols = Math.ceil(Math.sqrt(total));
   const cellW = 1400 / cols;
   const cellH = 1000 / Math.ceil(total / cols);
@@ -46,6 +47,22 @@ export function gridPosition(index: number, total: number) {
     x: (index % cols) * cellW + (cellW - 200) / 2,
     y: Math.floor(index / cols) * cellH + 120,
   };
+}
+
+/**
+ * Creates a stable fingerprint of all foreign key relationships.
+ * Used to skip rebuilding edges when relationships haven't changed.
+ */
+export function edgeFingerprint(tables: Table[]): string {
+  const parts: string[] = [];
+  for (const table of tables) {
+    for (const col of table.columns ?? []) {
+      if (col.foreignKey) {
+        parts.push(`${table.name}.${col.name}->${col.foreignKey.table}.${col.foreignKey.column}`);
+      }
+    }
+  }
+  return parts.sort().join('|');
 }
 
 /**

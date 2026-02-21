@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useTamboStreamStatus } from '@tambo-ai/react';
 import { useSchema } from '@/lib/schema-context';
-import { Table } from '@/lib/types';
+import type { Table } from '@/lib/types';
 import { z } from 'zod';
 
 interface SchemaCanvasProps {
@@ -48,7 +48,7 @@ export function SchemaCanvas({
   mode = 'full',
 }: SchemaCanvasProps) {
   const { streamStatus } = useTamboStreamStatus<SchemaCanvasProps>();
-  const { setSchemaData, setIsStreaming } = useSchema();
+  const { schemaData, setSchemaData, setIsStreaming } = useSchema();
 
   /** Sync streaming tables to schema context. */
   useEffect(() => {
@@ -102,7 +102,7 @@ export function SchemaCanvas({
     );
   }
 
-  const tableCount = tables?.length ?? 0;
+  const totalTables = schemaData.length;
   return (
     <div className='flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg text-sm text-green-700'>
       <svg
@@ -118,16 +118,8 @@ export function SchemaCanvas({
           d='M5 13l4 4L19 7'
         />
       </svg>
-      {mode === 'update' ? (
-        <>
-          Added {tableCount} {tableCount === 1 ? 'table' : 'tables'} to canvas
-        </>
-      ) : (
-        <>
-          Schema ready — {tableCount}{' '}
-          {tableCount === 1 ? 'table' : 'tables'} in canvas
-        </>
-      )}
+      Schema ready — {totalTables}{' '}
+      {totalTables === 1 ? 'table' : 'tables'} in canvas
     </div>
   );
 }

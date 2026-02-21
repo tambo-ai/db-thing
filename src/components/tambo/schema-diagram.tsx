@@ -17,6 +17,7 @@ import {
   EDGE_STYLE,
   EDGE_MARKER,
   fingerprint,
+  edgeFingerprint,
   gridPosition,
   buildEdges,
 } from './diagram-utils';
@@ -49,6 +50,9 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
   /** Stores the pending fitView RAF id so we can cancel it on unmount or re-trigger. */
   const fitViewRaf = useRef<number | null>(null);
 
+  /** Last edge fingerprint — skip rebuilding edges when FK relationships haven't changed. */
+  const prevEdgeFp = useRef('');
+
   useEffect(() => {
     setIsMounted(true);
     return () => {
@@ -78,16 +82,23 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
    * which prevents ReactFlow from re-rendering/flashing those nodes.
    */
   useEffect(() => {
-    if (!tables || tables.length === 0) {
+    if (tables.length === 0) {
       setNodes([]);
       setEdges([]);
       positions.current.clear();
       fingerprints.current.clear();
       prevCount.current = 0;
+      prevEdgeFp.current = '';
       return;
     }
 
     const valid = tables.filter((t) => t.name);
+    const validNames = new Set(valid.map((t) => t.name));
+
+    // Clean up stale fingerprints for removed tables
+    for (const key of fingerprints.current.keys()) {
+      if (!validNames.has(key)) fingerprints.current.delete(key);
+    }
 
     setNodes((current) => {
       const byId = new Map(current.map((n) => [n.id, n]));
@@ -113,7 +124,11 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
       });
     });
 
-    setEdges(buildEdges(valid));
+    const eFp = edgeFingerprint(valid);
+    if (eFp !== prevEdgeFp.current) {
+      prevEdgeFp.current = eFp;
+      setEdges(buildEdges(valid));
+    }
 
     if (valid.length !== prevCount.current) {
       prevCount.current = valid.length;
@@ -135,7 +150,7 @@ function SchemaDiagramInner({ tables = [] }: SchemaDiagramProps) {
     );
   }
 
-  if (!tables || tables.length === 0) {
+  if (tables.length === 0) {
     return (
       <div className='h-full w-full border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center'>
         <div className='text-center text-gray-500'>
