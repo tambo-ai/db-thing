@@ -88,7 +88,7 @@ export function SchemaCanvas({
           ? mode === 'update'
             ? 'Updating schema...'
             : 'Generating schema...'
-          : `Schema updated — ${totalTables} ${totalTables === 1 ? 'table' : 'tables'}`}
+          : `Schema ${mode === 'update' ? 'updated' : 'ready'} — ${totalTables} ${totalTables === 1 ? 'table' : 'tables'}`}
       </span>
     </div>
   );

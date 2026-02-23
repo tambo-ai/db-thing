@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
     description:
       'Create, visualize, and optimize database schemas through natural language conversations.',
     type: 'website',
-    url: 'https://db-thing.tambo.co',
+    url: 'https://dbthing.tambo.co',
     siteName: 'DB Thing',
   },
   twitter: {
@@ -91,6 +92,7 @@ export default function Home() {
             aria-label='DB Thing database schema design demo'
           >
             <source src='/videos/demo.mp4' type='video/mp4' />
+            Your browser does not support the video tag.
           </video>
         </div>
 
@@ -104,81 +106,20 @@ export default function Home() {
               schema.prisma
             </span>
           </div>
-          <pre className='text-[13px] leading-7 font-mono overflow-x-auto'>
-            <code>
-              <span className='text-zinc-500'>model</span>{' '}
-              <span className='text-zinc-300'>User</span>{' '}
-              <span className='text-zinc-600'>{'{'}</span>
-              {'\n'}
-              {'  '}
-              <span className='text-zinc-400'>id</span>
-              {'        '}
-              <span className='text-zinc-500'>Int</span>
-              {'      '}
-              <span className='text-zinc-600'>@id @default</span>
-              <span className='text-zinc-700'>(</span>
-              <span className='text-zinc-500'>autoincrement()</span>
-              <span className='text-zinc-700'>)</span>
-              {'\n'}
-              {'  '}
-              <span className='text-zinc-400'>email</span>
-              {'     '}
-              <span className='text-zinc-500'>String</span>
-              {'   '}
-              <span className='text-zinc-600'>@unique</span>
-              {'\n'}
-              {'  '}
-              <span className='text-zinc-400'>name</span>
-              {'      '}
-              <span className='text-zinc-500'>String?</span>
-              {'\n'}
-              {'  '}
-              <span className='text-zinc-400'>posts</span>
-              {'     '}
-              <span className='text-zinc-300'>Post</span>
-              <span className='text-zinc-600'>[]</span>
-              {'\n'}
-              <span className='text-zinc-600'>{'}'}</span>
-              {'\n\n'}
-              <span className='text-zinc-500'>model</span>{' '}
-              <span className='text-zinc-300'>Post</span>{' '}
-              <span className='text-zinc-600'>{'{'}</span>
-              {'\n'}
-              {'  '}
-              <span className='text-zinc-400'>id</span>
-              {'        '}
-              <span className='text-zinc-500'>Int</span>
-              {'      '}
-              <span className='text-zinc-600'>@id @default</span>
-              <span className='text-zinc-700'>(</span>
-              <span className='text-zinc-500'>autoincrement()</span>
-              <span className='text-zinc-700'>)</span>
-              {'\n'}
-              {'  '}
-              <span className='text-zinc-400'>title</span>
-              {'     '}
-              <span className='text-zinc-500'>String</span>
-              {'\n'}
-              {'  '}
-              <span className='text-zinc-400'>author</span>
-              {'    '}
-              <span className='text-zinc-300'>User</span>
-              {'     '}
-              <span className='text-zinc-600'>@relation</span>
-              <span className='text-zinc-700'>(</span>
-              <span className='text-zinc-500'>fields: </span>
-              <span className='text-zinc-600'>[</span>
-              <span className='text-zinc-400'>authorId</span>
-              <span className='text-zinc-600'>]</span>
-              <span className='text-zinc-700'>)</span>
-              {'\n'}
-              {'  '}
-              <span className='text-zinc-400'>authorId</span>
-              {'  '}
-              <span className='text-zinc-500'>Int</span>
-              {'\n'}
-              <span className='text-zinc-600'>{'}'}</span>
-            </code>
+          <pre className='text-[13px] leading-7 font-mono text-zinc-500 overflow-x-auto'>
+{`model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  posts     Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  author    User     @relation(fields: [authorId])
+  authorId  Int
+}`}
           </pre>
         </div>
       </main>
@@ -211,15 +152,15 @@ export default function Home() {
           </p>
           <div className='flex items-center justify-center gap-14'>
             <div className='flex flex-col items-center gap-2.5'>
-              <img src='/sql.svg' alt='SQL' className='w-6 h-6 brightness-0 invert opacity-40' />
+              <Image src='/sql.svg' alt='SQL' width={24} height={24} className='brightness-0 invert opacity-40' />
               <span className='text-[11px] text-zinc-600'>SQL</span>
             </div>
             <div className='flex flex-col items-center gap-2.5'>
-              <img src='/prisma.svg' alt='Prisma' className='w-6 h-6 brightness-0 invert opacity-40' />
+              <Image src='/prisma.svg' alt='Prisma' width={24} height={24} className='brightness-0 invert opacity-40' />
               <span className='text-[11px] text-zinc-600'>Prisma</span>
             </div>
             <div className='flex flex-col items-center gap-2.5'>
-              <img src='/drizzle.svg' alt='Drizzle' className='w-6 h-6 brightness-0 invert opacity-40' />
+              <Image src='/drizzle.svg' alt='Drizzle' width={24} height={24} className='brightness-0 invert opacity-40' />
               <span className='text-[11px] text-zinc-600'>Drizzle</span>
             </div>
           </div>
@@ -235,10 +176,12 @@ export default function Home() {
             rel='noopener noreferrer'
             className='inline-block group'
           >
-            <img
+            <Image
               src='/Tambo-Vertical-Lockup-DM.svg'
               alt='Tambo'
-              className='h-40 mx-auto mb-8 opacity-60 group-hover:opacity-80 transition-opacity duration-300'
+              width={200}
+              height={160}
+              className='mx-auto mb-8 opacity-60 group-hover:opacity-80 transition-opacity duration-300'
             />
           </a>
           <p className='text-sm text-zinc-400 mb-2'>Built by the Tambo team</p>

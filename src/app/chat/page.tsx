@@ -8,6 +8,7 @@ import { SchemaProvider, useSchema } from '@/lib/schema-context';
 import { TamboProvider } from '@tambo-ai/react';
 import { TamboMcpProvider } from '@tambo-ai/react/mcp';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 function useUserContextKey() {
@@ -90,7 +91,7 @@ function ChatContent() {
               className='inline-flex items-baseline gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors leading-none'
             >
               <span>Built with</span>
-              <img src='/Tambo-Lockup.svg' alt='Tambo' className='h-3 relative top-[0.5px]' />
+              <Image src='/Tambo-Lockup.svg' alt='Tambo' width={48} height={12} className='relative top-[0.5px]' />
             </a>
           </header>
 
