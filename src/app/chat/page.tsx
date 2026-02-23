@@ -77,7 +77,24 @@ function ChatContent() {
       userKey={contextKey ?? "database-design-tool"}
     >
       <TamboMcpProvider>
-        <div className={`flex h-screen bg-gray-50 ${isResizing ? 'select-none' : ''}`}>
+        <div className={`flex flex-col h-screen bg-gray-50 ${isResizing ? 'select-none' : ''}`}>
+          {/* Top Header */}
+          <header className='h-11 flex items-center justify-between px-4 border-b border-gray-200 bg-white shrink-0'>
+            <div className='flex items-center gap-3'>
+              <h1 className='text-sm font-semibold text-gray-900 tracking-tight'>DB Thing</h1>
+            </div>
+            <a
+              href='https://tambo.co'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='inline-flex items-baseline gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors leading-none'
+            >
+              <span>Built with</span>
+              <img src='/Tambo-Lockup.svg' alt='Tambo' className='h-3 relative top-[0.5px]' />
+            </a>
+          </header>
+
+          <div className='flex flex-1 overflow-hidden'>
           {/* Chat Sidebar */}
           <div
             ref={sidebarRef}
@@ -122,6 +139,7 @@ function ChatContent() {
 
           {/* Main Content Area */}
           <SchemaViewer schemaData={schemaData} isStreaming={isStreaming} />
+          </div>
         </div>
       </TamboMcpProvider>
     </TamboProvider>
