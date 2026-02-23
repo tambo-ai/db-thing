@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { Loader2, Check } from 'lucide-react';
 import { useTamboStreamStatus } from '@tambo-ai/react';
 import { useSchema } from '@/lib/schema-context';
 import type { Table } from '@/lib/types';
@@ -72,54 +73,23 @@ export function SchemaCanvas({
     return () => setIsStreaming(false);
   }, [streamStatus.isStreaming, streamStatus.isPending, setIsStreaming]);
 
-  if (streamStatus.isPending) {
-    return (
-      <div className='flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg text-sm text-blue-700'>
-        <div className='w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin' />
-        {mode === 'update'
-          ? 'Updating schema...'
-          : 'Designing database schema...'}
-      </div>
-    );
-  }
-
-  if (streamStatus.isStreaming) {
-    const tableCount = tables?.length ?? 0;
-    return (
-      <div className='flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg text-sm text-blue-700'>
-        <div className='w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin' />
-        {mode === 'update' ? (
-          <>
-            Adding {tableCount} {tableCount === 1 ? 'table' : 'tables'}...
-          </>
-        ) : (
-          <>
-            Streaming schema... {tableCount}{' '}
-            {tableCount === 1 ? 'table' : 'tables'} so far
-          </>
-        )}
-      </div>
-    );
-  }
-
+  const isActive = streamStatus.isPending || streamStatus.isStreaming;
   const totalTables = schemaData.length;
+
   return (
-    <div className='flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg text-sm text-green-700'>
-      <svg
-        className='w-4 h-4'
-        fill='none'
-        stroke='currentColor'
-        viewBox='0 0 24 24'
-      >
-        <path
-          strokeLinecap='round'
-          strokeLinejoin='round'
-          strokeWidth={2}
-          d='M5 13l4 4L19 7'
-        />
-      </svg>
-      Schema ready — {totalTables}{' '}
-      {totalTables === 1 ? 'table' : 'tables'} in canvas
+    <div className='flex items-center gap-1 text-xs opacity-50 px-3 py-1'>
+      {isActive ? (
+        <Loader2 className='h-3 w-3 animate-spin text-muted-foreground' />
+      ) : (
+        <Check className='h-3 w-3 text-green-500' />
+      )}
+      <span>
+        {isActive
+          ? mode === 'update'
+            ? 'Updating schema...'
+            : 'Generating schema...'
+          : `Schema updated — ${totalTables} ${totalTables === 1 ? 'table' : 'tables'}`}
+      </span>
     </div>
   );
 }

@@ -289,10 +289,10 @@ export function SchemaViewer({
                 <div className='relative h-full'>
                   <SchemaDiagram tables={safeSchemaData} />
                   {isStreaming && (
-                    <div className='absolute top-4 right-4 z-20 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2'>
-                      <div className='w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin' />
-                      <span className='text-sm text-blue-700'>
-                        Streaming... {safeSchemaData.length}{' '}
+                    <div className='absolute top-4 right-4 z-20 flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm'>
+                      <div className='w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse' />
+                      <span className='text-xs text-gray-600'>
+                        Streaming {safeSchemaData.length}{' '}
                         {safeSchemaData.length === 1 ? 'table' : 'tables'}
                       </span>
                     </div>
