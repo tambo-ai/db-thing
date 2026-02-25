@@ -9,6 +9,29 @@ export const metadata: Metadata = {
   },
   description:
     'Create, visualize, and optimize database schemas through natural language conversations.',
+  openGraph: {
+    title: 'DB Thing - AI Database Schema Designer',
+    description:
+      'Create, visualize, and optimize database schemas through natural language conversations.',
+    url: 'https://dbthing.tambo.co',
+    siteName: 'DB Thing',
+    type: 'website',
+    images: [
+      {
+        url: '/opengraph-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Tambo logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DB Thing - AI Database Schema Designer',
+    description:
+      'Create, visualize, and optimize database schemas through natural language conversations.',
+    images: ['/opengraph-image.jpg'],
+  },
 };
 
 export default function RootLayout({
