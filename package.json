@@ -61,6 +61,6 @@
     "postcss": "^8.5.11",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^6"
   }
 }
