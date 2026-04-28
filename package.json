@@ -58,7 +58,7 @@
     "clsx": "^2.1.1",
     "eslint": "^9",
     "eslint-config-next": "^16.1.6",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.10",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
